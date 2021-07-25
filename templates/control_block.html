@@ -1,0 +1,47 @@
+<script type="text/javascript">
+    {% include 'control_scripts.js' ignore missing %}
+</script>
+
+<div class="center-block">
+    <span class="label-container">
+        <span class="label">Connected:</span> 
+        <br />
+        <span class="label">Output:</span> 
+        <br />
+        <span class="label">V<sub>OUT</sub>:</span> 
+        <br />
+        <span class="label">V<sub>SET</sub>:</span> 
+        <br />
+        <span class="label">TEST</span>
+    </span>
+    
+    <span class="data-container">
+        <span class="data" id="connection-status">Not Connected</span> 
+        <br />
+        <span class="data" id="enabled-status">DISABLED</span> 
+        <br />
+        <span class="data" id="voltage">0.0V</span> 
+        <br />
+        <span class="data" id="test"> <input class="entry" id="vset-entry" type="text" value="12.0"> </span> 
+        <br />
+        <span class="data" id="test">TEST</span>
+    </span>
+
+    <span class="btn-container">
+        <span class="label"> </span> 
+        <br />
+        <button id="toggle-enable-btn" type="submit" onclick="toggle_enable_mmspu()">ENABLE</button>
+        <br />
+        <span class="label"> </span> 
+        <br />
+        <button id="set-voltage-btn" type="submit" onclick="setVoltage()">SET</button> 
+        <br />
+        <span class="label"> </span> 
+    </span>
+    <br />
+    
+
+    <br />
+    
+</div>
+
