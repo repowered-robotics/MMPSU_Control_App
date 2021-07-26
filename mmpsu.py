@@ -1,3 +1,4 @@
+from typing import Any
 import smbus
 import struct
 import queue
@@ -26,7 +27,8 @@ PHASE_E_CURRENT_LIMIT = 19
 PHASE_F_DUTY_CYCLE = 20
 PHASE_F_CURRENT = 21
 PHASE_F_CURRENT_LIMIT = 22
-NUM_FIELDS = 23
+PHASES_IN_OVERTEMP = 23
+NUM_FIELDS = 24
 
 MMPSU_ADDR = 0x5A
 
@@ -67,7 +69,7 @@ class MMPSU:
             self._bus.write_i2c_block_data(self._addr, cmd, value)
             self._connected = True
         except IOError:
-            self.errors.put("Write Error")
+            self.errors.put("I2C Write Error")
             self._connected = False
     
     def _read_field(self, field: int) -> bytearray:
@@ -79,14 +81,15 @@ class MMPSU:
                 retval.append(val)
             self._connected = True
         except IOError:
+            # print("I2C Read Error")
             self._connected = False
 
         return retval
     
     def _write_int(self, field: int, data: int) -> None:
         arr = bytearray(4)
-        struct.pack_into('<i', data, 0, 1)
-        self._write_field(field, arr)
+        struct.pack_into('<i', arr, 0, data)
+        self._write_field(field, list(arr))
     
     def _read_int(self, field: int) -> int:
         data = self._read_field(field)
@@ -133,6 +136,112 @@ class MMPSU:
     def get_voltage(self) -> float:
         vout_raw = self._read_int(VOUT_MEASURED)
         return float(vout_raw)/1000.0
+    
+    def get_phases_present(self) -> list:
+        retval = []
+        phases_present = self._read_int(PHASES_PRESENT)
+        for i in range(0, MAX_PHASES):
+            if (phases_present >> i) & 1 == 1:
+                retval.append(i)
+        
+        return retval
+        
+    def get_phases_enabled(self) -> list:
+        retval = []
+        phases_enabled = self._read_int(PHASES_ENABLED)
+        for i in range(0, MAX_PHASES):
+            if (phases_enabled >> i) & 1 == 1:
+                retval.append(i)
+        
+        return retval
+
+    def get_phase_currents(self) -> list:
+        retval = []
+        value = float(self._read_int(PHASE_A_CURRENT))/1000.0
+        retval.append(value)
+        value = float(self._read_int(PHASE_B_CURRENT))/1000.0
+        retval.append(value)
+        value = float(self._read_int(PHASE_C_CURRENT))/1000.0
+        retval.append(value)
+        value = float(self._read_int(PHASE_D_CURRENT))/1000.0
+        retval.append(value)
+        value = float(self._read_int(PHASE_E_CURRENT))/1000.0
+        retval.append(value)
+        value = float(self._read_int(PHASE_F_CURRENT))/1000.0
+        retval.append(value)
+        return retval
+    
+    def get_phase_duty_cycles(self) -> list:
+        retval = []
+        value = float(self._read_int(PHASE_A_DUTY_CYCLE))/5440.0
+        retval.append(value)
+        value = float(self._read_int(PHASE_B_DUTY_CYCLE))/5440.0
+        retval.append(value)
+        value = float(self._read_int(PHASE_C_DUTY_CYCLE))/5440.0
+        retval.append(value)
+        value = float(self._read_int(PHASE_D_DUTY_CYCLE))/5440.0
+        retval.append(value)
+        value = float(self._read_int(PHASE_E_DUTY_CYCLE))/5440.0
+        retval.append(value)
+        value = float(self._read_int(PHASE_F_DUTY_CYCLE))/5440.0
+        retval.append(value)
+        return retval
+    
+    def get_phases_in_overtemp(self):
+        retval = []
+        phases_in_overtemp = self._read_int(PHASES_IN_OVERTEMP)
+        for i in range(0, MAX_PHASES):
+            if (phases_in_overtemp >> i) & 1 == 1:
+                retval.append(i)
+        return retval
+
+    def set_phase_current_limit(self, phase, limit) -> None:
+        phase_num = 0
+        if type(phase) is str:
+            if phase.upper() == 'A' or phase == '0':
+                phase_num = PHASE_A_CURRENT_LIMIT
+            elif phase.upper() == 'B' or phase == '1':
+                phase_num = PHASE_B_CURRENT_LIMIT
+            elif phase.upper() == 'C' or phase == '2':
+                phase_num = PHASE_C_CURRENT_LIMIT
+            elif phase.upper() == 'D' or phase == '3':
+                phase_num = PHASE_D_CURRENT_LIMIT
+            elif phase.upper() == 'E' or phase == '4':
+                phase_num = PHASE_E_CURRENT_LIMIT
+            elif phase.upper() == 'F' or phase == '5':
+                phase_num = PHASE_F_CURRENT_LIMIT
+            else:
+                return None
+        elif type(phase) is int:
+            if phase == 0:
+                phase_num = PHASE_A_CURRENT_LIMIT
+            elif phase == 1:
+                phase_num = PHASE_B_CURRENT_LIMIT
+            elif phase == 2:
+                phase_num = PHASE_C_CURRENT_LIMIT
+            elif phase == 3:
+                phase_num = PHASE_D_CURRENT_LIMIT
+            elif phase == 4:
+                phase_num = PHASE_E_CURRENT_LIMIT
+            elif phase == 5:
+                phase_num = PHASE_F_CURRENT_LIMIT
+            else:
+                return None
+        else:
+            return None
+        try:
+            limit_int = int(float(limit)*1000.0 + 0.5)
+        except ValueError:
+            return None
+            
+        self._write_int(phase_num, limit_int)
+
+    def get_current_out(self) -> float:
+        currents = self.get_phase_currents()
+        retval = 0.0
+        for i in currents:
+            retval += i
+        return retval
 
     # ==== BEGIN PROPERTY GUBBINS ====
     connected = property(lambda self: self._connected, None, None, "Get the status of whether or not MMPSU is found on I2C bus")

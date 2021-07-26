@@ -11,20 +11,22 @@ body {
 }
 
 .center-block {
+    display: inline-block;
     height: 50vh;
-    width: 40%;
+    width: 50%;
     margin: 50px auto;
+    margin-bottom: 10px;
     font-size: 1.5em;
 }
 
 .label-container {
-    height: 80%;
+    height: 100%;
+    width: 20%;
     display: inline-flex;
     flex-direction: column;
     justify-content: space-between;
     text-align: right;
     vertical-align: bottom;
-    margin: auto 0;
 }
 
 .label {
@@ -33,14 +35,13 @@ body {
 }
 
 .data-container {
-    height: 80%;
-    width: 40%;
+    height: 100%;
+    width: 35%;
     display: inline-flex;
     flex-direction: column;
     justify-content: space-between;
     text-align: left;
     vertical-align: bottom;
-    margin: auto 0;
 }
 
 .data {
@@ -65,14 +66,13 @@ input.entry {
 }
 
 .btn-container {
-    height: 80%;
-    width: 30%;
+    height: 100%;
+    width: 20%;
     display: inline-flex;
     flex-direction: column;
     justify-content: space-between;
     text-align: left;
     vertical-align: bottom;
-    margin: auto 0;
 }
 
 .btn-container > button {
@@ -80,9 +80,77 @@ input.entry {
     margin: 0 5px;
     font-size: 1.0em;
 }
-/* 
-#toggle-enable-btn {
+
+.phases-container {
+    font-size: 1.2em;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    width: 90%;
+    margin: 50px auto;
+    justify-content: space-between;
+}
+
+.phase-data-container {
+    display: inline-block;
+    width: 15%;
+}
+
+.phase-name {
     display: block;
+    max-width: 50%;
+    margin: 5px auto;
+}
+
+.phase-label {
+    display: inline-block;
+    width: 50%;
+    text-align: right;
+    margin: 5px 0;
+}
+
+.phase-data {
+    display: inline-block;
+    width: 45%;
+    text-align: left;
+    margin: 5px 0;
+}
+
+.phase-entry {
+    display: inline-block;
+    width: 80%;
     font-size: 1.0em;
-    margin: 10px auto;
-} */
+}
+
+.phase-btn {
+    display: block;
+    width: 45%;
+    font-size: 0.9em;
+    margin: 5px auto;
+}
+
+.debug-window {
+    display: inline-block;
+    background-color: gray;
+    color: black;
+    font-size: 12pt;
+    height: 25em;
+    width: 40em;
+    margin: 0 auto;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    /* scroll-behavior: smooth; */
+}
+
+.debug-window > p {
+    font-family:'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    margin: 0 5px;
+}
+
+.overtemp-indicator {
+    display: inline-block;
+    background-color: gray;
+    height: 1em;
+    width: 1em;
+    border-radius: 50%;
+}
