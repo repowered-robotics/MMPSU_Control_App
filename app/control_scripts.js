@@ -1,5 +1,41 @@
 const phase_names = ["a", "b", "c", "d", "e", "f"];
 
+
+var app =angular.module('mmpsuApp', []);
+
+app.controller('mmpsuAppCtl', function($scope) {
+    $scope.socket = io();
+
+    $scope.mmpsu = {
+        enabled: false,
+        connected: false,
+        vout_setpt: 12.0,
+        iout_limit: 150.0
+    };
+
+    $scope.socket.on('update', function(data){
+        $scope.apply(function(){
+            if(data.connected){
+                // 
+                $scope.mmpsu.connected = true;
+                $scope.mmpsu.connected_str = "CONNECTED";
+                $scope.mmpsu.enabled = data.enabled;
+                if($scope.mmpsu.enabled){
+                    $scope.mmpsu.enabled_str = "ENABLED";
+                }else{
+                    $scope.mmpsu.enabled_str = "DISABLED";
+                }
+                $scope.mmpsu.vout = data.vout;
+            }else{
+                $scope.mmpsu.connected = false;
+                $scope.mmpsu.connected_str = "NOT CONNECTED";
+                $scope.mmpsu.enabled_str = "---";
+            }
+        });
+    });
+});
+
+
 function get_mmpsu_voltage(){
     var xhr = new XMLHttpRequest();
     xhr.open("GET", "mmpsu/poll?type=voltage", false);
@@ -39,13 +75,13 @@ function getAllData(){
         }
 
         document.getElementById("voltage").innerHTML = all_data.voltage.toFixed(3) + " V";
-        document.getElementById("current").innerHTML = all_data.current.toFixed(3) + " A";
+        // document.getElementById("current").innerHTML = all_data.current.toFixed(3) + " A";
         
-        var present = all_data.present;
-        var enabled = all_data.enabled;
-        var current = all_data.current;
-        var duty_cycle = all_data.duty_cycle;
-        var overtemps = all_data.overtemp;
+        let present = all_data.present;
+        let enabled = all_data.enabled;
+        let current = all_data.current;
+        let duty_cycle = all_data.duty_cycle;
+        let overtemps = all_data.overtemp;
 
         var present_statuses = [false, false, false, false, false, false];
         var enabled_statuses = [false, false, false, false, false, false];
@@ -119,11 +155,11 @@ function appendDebugMessage(msg){
 }
 
 function pollForData(interval){
-    let eventSource = new EventSource("http://adams-pi3.local:5000/debug");
+    // let eventSource = new EventSource("http://adams-pi3.local:5000/debug");
 
-    eventSource.onmessage = function(event){
-        appendDebugMessage(event.data);
-    };
+    // eventSource.onmessage = function(event){
+    //     appendDebugMessage(event.data);
+    // };
 
     setInterval(function(){
         getAllData();
@@ -182,13 +218,13 @@ function setTotalCurrentLimit(){
 
 function enable_mmspu() {
     var xhr = new XMLHttpRequest();
-    xhr.open("GET", "mmpsu/?enable=True", false);
+    xhr.open("GET", "mmpsu/config?enable=True", false);
     xhr.send( null );
 }
 
 function disable_mmspu(){
     var xhr = new XMLHttpRequest();
-    xhr.open("GET", "mmpsu/?enable=False", false);
+    xhr.open("GET", "mmpsu/config?enable=False", false);
     xhr.send( null );
 }
 

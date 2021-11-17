@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>MMPSU Dashboard</title>
+        <link rel="icon" href="imgs/logo_icon.ico">
+        <link rel="stylesheet" type="text/css" href="style.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+        <script src="/socket.io/socket.io.js"></script>
+        <script src="control_scripts.js"></script>
+    </head>
+    
+    <body ng-app="mmpsuApp" ng-controller="mmpsuAppCtl">
+        
+
+        <div class="center-block">
+            <span class="label-container">
+                <span class="label">Connected:</span> 
+                <br />
+                <span class="label">Output:</span> 
+                <br />
+                <span class="label">V<sub>OUT</sub>:</span> 
+                <br />
+                <span class="label">I<sub>OUT</sub>:</span> 
+                <br />
+                <span class="label">V<sub>SET</sub>:</span> 
+                <br />
+                <span class="label">I<sub>LIMIT</sub>:</span> 
+            </span>
+            
+            <span class="data-container">
+                <span class="data" id="connection-status" ng-style="mmpsu.connected_style">{{mmpsu.connected_str}}</span> 
+                <br />
+                <span class="data" id="enabled-status" ng-style="mmpsu.enabled_style">{{mmpsu.enabled_str}}</span> 
+                <br />
+                <span class="data" id="voltage">{{mmpsu.vout}} V</span> 
+                <br />
+                <span class="data" id="current">{{mmpsu.iout}} A</span> 
+                <br />
+                <span class="data"> <input class="entry" id="vset-entry" type="text" ng-model="mmpsu.vout_setpt"> </span> 
+                <br />
+                <span class="data"> <input class="entry" id="total-ilimit-entry" type="text" ng-model="mmpsu.iout_limit"> </span> 
+            </span>
+
+            <span class="btn-container">
+                <span class="label"> </span> 
+                <br />
+                <button id="enable-btn" type="submit" onclick="enable_mmspu()">ENABLE</button>
+                <button id="disable-btn" type="submit" onclick="disable_mmspu()">DISABLE</button>
+                <br />
+                <span class="label"> </span> 
+                <br />
+                <span class="label"> </span> 
+                <br />
+                <button id="set-voltage-btn" type="submit" onclick="setVoltage()">SET</button> 
+                <br />
+                <button id="set-total-ilimit-btn" type="submit" onclick="setTotalCurrentLimit()">SET</button> 
+            </span>
+            
+        </div>
+
+        <span class="debug-window-container">
+            <h2>UART Debug Output</h3>
+            <div class="debug-window" id="debugger-window">
+
+            </div>
+        </span>
+
+        <div class="phases-container">
+            <span class="phase-data-container" id="phase-a">
+                <span class="phase-name">Phase A</span>
+                <hr>
+                <span class="phase-label">Present:</span>
+                <span class="phase-data" id="phase-a-present">--- </span>
+                <br />
+                <span class="phase-label">Enabled:</span>
+                <span class="phase-data" id="phase-a-enabled">--- </span>
+                <br />
+                <span class="phase-label">Duty Cycle:</span>
+                <span class="phase-data" id="phase-a-duty-cycle">--- &percnt;</span>
+                <br />
+                <span class="phase-label">Current:</span>
+                <span class="phase-data" id="phase-a-current">--- A</span>
+                <br />
+                <span class="phase-label">Overtemp:</span>
+                <span class="overtemp-indicator" id="phase-a-overtemp"></span>
+                <br />
+                <span class="phase-label">I<sub>LIMIT</sub>:</span>
+                <span class="phase-data"> 
+                    <input class="phase-entry" id="phase-a-limit-entry" type="text" value="30.0">
+                </span>
+                <br />
+                <button class="phase-btn" id="phase-a-set-limit-btn" onclick="setCurrentLimit(0)">SET</button>
+            </span>
+
+            <span class="phase-data-container" id="phase-b">
+                <span class="phase-name">Phase B</span>
+                <hr>
+                <span class="phase-label">Present:</span>
+                <span class="phase-data" id="phase-b-present">--- </span>
+                <br />
+                <span class="phase-label">Enabled:</span>
+                <span class="phase-data" id="phase-b-enabled">--- </span>
+                <br />
+                <span class="phase-label">Duty Cycle:</span>
+                <span class="phase-data" id="phase-b-duty-cycle">--- &percnt;</span>
+                <br />
+                <span class="phase-label">Current:</span>
+                <span class="phase-data" id="phase-b-current">--- A</span>
+                <br />
+                <span class="phase-label">Overtemp:</span>
+                <span class="overtemp-indicator" id="phase-b-overtemp"></span>
+                <br />
+                <span class="phase-label">I<sub>LIMIT</sub>:</span>
+                <span class="phase-data"> 
+                    <input class="phase-entry" id="phase-b-limit-entry" type="text" value="30.0">
+                </span>
+                <br />
+                <button class="phase-btn" id="phase-b-set-limit-btn" onclick="setCurrentLimit(1)">SET</button>
+            </span>
+            
+            <span class="phase-data-container" id="phase-c">
+                <span class="phase-name">Phase C</span>
+                <hr>
+                <span class="phase-label">Present:</span>
+                <span class="phase-data" id="phase-c-present">--- </span>
+                <br />
+                <span class="phase-label">Enabled:</span>
+                <span class="phase-data" id="phase-c-enabled">--- </span>
+                <br />
+                <span class="phase-label">Duty Cycle:</span>
+                <span class="phase-data" id="phase-c-duty-cycle">--- &percnt;</span>
+                <br />
+                <span class="phase-label">Current:</span>
+                <span class="phase-data" id="phase-c-current">--- A</span>
+                <br />
+                <span class="phase-label">Overtemp:</span>
+                <span class="overtemp-indicator" id="phase-c-overtemp"></span>
+                <br />
+                <span class="phase-label">I<sub>LIMIT</sub>:</span>
+                <span class="phase-data"> 
+                    <input class="phase-entry" id="phase-c-limit-entry" type="text" value="30.0">
+                </span>
+                <br />
+                <button class="phase-btn" id="phase-c-set-limit-btn" onclick="setCurrentLimit(2)">SET</button>
+            </span>
+
+            <span class="phase-data-container" id="phase-d">
+                <span class="phase-name">Phase D</span>
+                <hr>
+                <span class="phase-label">Present:</span>
+                <span class="phase-data" id="phase-d-present">--- </span>
+                <br />
+                <span class="phase-label">Enabled:</span>
+                <span class="phase-data" id="phase-d-enabled">--- </span>
+                <br />
+                <span class="phase-label">Duty Cycle:</span>
+                <span class="phase-data" id="phase-d-duty-cycle">--- &percnt;</span>
+                <br />
+                <span class="phase-label">Current:</span>
+                <span class="phase-data" id="phase-d-current">--- A</span>
+                <br />
+                <span class="phase-label">Overtemp:</span>
+                <span class="overtemp-indicator" id="phase-d-overtemp"></span>
+                <br />
+                <span class="phase-label">I<sub>LIMIT</sub>:</span>
+                <span class="phase-data"> 
+                    <input class="phase-entry" id="phase-d-limit-entry" type="text" value="30.0">
+                </span>
+                <br />
+                <button class="phase-btn" id="phase-d-set-limit-btn" onclick="setCurrentLimit(3)">SET</button>
+            </span>
+            
+            <span class="phase-data-container" id="phase-e">
+                <span class="phase-name">Phase E</span>
+                <hr>
+                <span class="phase-label">Present:</span>
+                <span class="phase-data" id="phase-e-present">--- </span>
+                <br />
+                <span class="phase-label">Enabled:</span>
+                <span class="phase-data" id="phase-e-enabled">--- </span>
+                <br />
+                <span class="phase-label">Duty Cycle:</span>
+                <span class="phase-data" id="phase-e-duty-cycle">--- &percnt;</span>
+                <br />
+                <span class="phase-label">Current:</span>
+                <span class="phase-data" id="phase-e-current">--- A</span>
+                <br />
+                <span class="phase-label">Overtemp:</span>
+                <span class="overtemp-indicator" id="phase-e-overtemp"></span>
+                <br />
+                <span class="phase-label">I<sub>LIMIT</sub>:</span>
+                <span class="phase-data"> 
+                    <input class="phase-entry" id="phase-e-limit-entry" type="text" value="30.0">
+                </span>
+                <br />
+                <button class="phase-btn" id="phase-e-set-limit-btn" onclick="setCurrentLimit(4)">SET</button>
+            </span>
+
+            <span class="phase-data-container" id="phase-f">
+                <span class="phase-name">Phase F</span>
+                <hr>
+                <span class="phase-label">Present:</span>
+                <span class="phase-data" id="phase-f-present">--- </span>
+                <br />
+                <span class="phase-label">Enabled:</span>
+                <span class="phase-data" id="phase-f-enabled">--- </span>
+                <br />
+                <span class="phase-label">Duty Cycle:</span>
+                <span class="phase-data" id="phase-f-duty-cycle">--- &percnt;</span>
+                <br />
+                <span class="phase-label">Current:</span>
+                <span class="phase-data" id="phase-f-current">--- A</span>
+                <br />
+                <span class="phase-label">Overtemp:</span>
+                <span class="overtemp-indicator" id="phase-f-overtemp"></span>
+                <br />
+                <span class="phase-label">I<sub>LIMIT</sub>:</span>
+                <span class="phase-data"> 
+                    <input class="phase-entry" id="phase-f-limit-entry" type="text" value="30.0">
+                </span>
+                <br />
+                <button class="phase-btn" id="phase-f-set-limit-btn" onclick="setCurrentLimit(5)">SET</button>
+            </span>
+
+        </div>
+
+        
+    </body>
+</html>

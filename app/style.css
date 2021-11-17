@@ -129,13 +129,19 @@ input.entry {
     margin: 5px auto;
 }
 
+.debug-window-container {
+    display: inline-block;
+    width: 40%;
+    margin: 0 auto;
+}
+
 .debug-window {
     display: inline-block;
     background-color: gray;
     color: black;
     font-size: 12pt;
-    height: 25em;
-    width: 40em;
+    height: 20em;
+    width: 95%;
     margin: 0 auto;
     overflow-x: hidden;
     overflow-y: scroll;

@@ -150,3 +150,9 @@ cython_debug/
 logs/
 
 # End of https://www.toptal.com/developers/gitignore/api/flask
+
+node_modules/
+bin/
+build/
+venv/
+_old/
