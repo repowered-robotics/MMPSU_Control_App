@@ -17,7 +17,9 @@ enum class MMPSUError {
   NONE,
   I2C_SLAVE_CONNECT_ERROR,
   I2C_WRITE_TIMEOUT,
+  I2C_WRITE_ERROR,
   I2C_READ_TIMEOUT,
+  I2C_READ_ERROR,
   I2C_ERROR
 };
 
@@ -80,6 +82,8 @@ void start_i2c_connection(int fd, uint8_t addr, MMPSUError& error);
 
 void close_i2c_connection(int fd);
 
+bool mmpsu_test_connection(int fd, MMPSUError& error);
+
 int mmpsu_read_field(int fd, int field, int timeout, MMPSUError& error);
 
 void mmpsu_write_field(int fd, int field, int value, int timeout, MMPSUError& error);
@@ -93,6 +97,8 @@ float mmpsu_get_vout(int fd, MMPSUError& error);
 int mmpsu_get_phases_present(int fd, MMPSUError& error);
 
 int mmpsu_get_phases_enabled(int fd, MMPSUError& error);
+
+int mmpsu_get_phases_in_overtemp(int fd, MMPSUError& error);
 
 float mmpsu_get_phase_current(int fd, int channel, MMPSUError& error);
 

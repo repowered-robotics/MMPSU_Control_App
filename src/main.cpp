@@ -12,6 +12,7 @@
 #include <vector>
 #include "json.hpp"
 #include "mmpsu.h"
+#include <csignal>
 
 using json = nlohmann::json;
 
@@ -28,15 +29,16 @@ json mmpsu_state = {
     {"update_time", 0.0},
     {"enabled", false},
     {"vout_setpt", 0.0},
-    {"vout", 0.0},
-    {"phases", {}},
-    {"errors", {}}
+    {"vout", 0.0}
 };
+
+std::map<int, std::string> phase_names { {0,"a"}, {1,"b"}, {2,"c"}, {3,"d"}, {4,"e"}, {5,"f"}, };
 
 std::mutex i2c_mutex;
 int i2c_fd = -1;
 uint8_t mmpsu_addr = 0x5A;
 MMPSUError comm_err;
+
 
 /**
  * @brief Attempt to close and recconect to the I2C character device
@@ -60,10 +62,8 @@ bool reconnect_i2c(char * fname, int& fd, uint8_t addr, MMPSUError& error){
  * @brief Thread for listening to a named pipe and updating mmpsu accoringly
  */
 void listener(){
-    umask(0);
-    mknod(data_in_path, S_IFIFO|0666, 0);
     std::ifstream data_in_stream;
-    data_in_stream.open(data_in_path, std::ios::in);
+    // data_in_stream.open(data_in_path, std::ios::in);
     std::string input;
 
     while(!done){
@@ -77,8 +77,15 @@ void listener(){
             continue;
         }
 
-        std::getline(data_in_stream, input);
+        // check if characters are available in the stream
+        if(data_in_stream.peek() == EOF){
+            input = "{}";
+        }else{
+            std::getline(data_in_stream, input);
+        }
+        
         auto obj = json::parse(input.c_str());
+        
 
         if(obj.contains("enabled")){
             if(obj["enabled"] != mmpsu_state["enabled"]){
@@ -134,27 +141,38 @@ int main(int argc, char *argv[]){
         i2c_mutex.lock();
         mmpsu_state_mtx.lock();
 
-        mmpsu_state["connected"] = comm_err == MMPSUError::NONE; // if any MMPSU error, connected -> false
-
         /* if I2C is not started/connected, attempt to do so */
-        if(i2c_fd < 0 || !mmpsu_state["connected"] || comm_err != MMPSUError::NONE){
+        if(i2c_fd < 0 || comm_err != MMPSUError::NONE){
             // MMPSU is not connected or some error occurred
             bool success = reconnect_i2c(i2c_path, i2c_fd, mmpsu_addr, comm_err);
-            /* delay conditionally (1 sec if we have an error) */
-            std::this_thread::sleep_for(std::chrono::milliseconds( !success ? 1000 : 0) );
+            if(success){
+                mmpsu_state["connected"] = mmpsu_test_connection(i2c_fd, comm_err);
+            }else{
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                mmpsu_state["connected"] = false;
+            }
         }else{
             /* MMPSU is connected
             ==== update the MMPSU state and print to stream ==== */
-            mmpsu_state_mtx.lock();
             mmpsu_state["vout"] = mmpsu_get_vout(i2c_fd, comm_err); // read vout measured
             int phases_present = mmpsu_get_phases_present(i2c_fd, comm_err);
             int phases_enabled = mmpsu_get_phases_enabled(i2c_fd, comm_err);
+            int phases_overtemp = mmpsu_get_phases_in_overtemp(i2c_fd, comm_err);
+
+            /* these numbers must always be less-than 64 if they are valid */
+            mmpsu_state["connected"] = comm_err == MMPSUError::NONE;
+
+            if(!mmpsu_state.contains("phases")){
+                mmpsu_state["phases"] = json::object();
+            }
             for(int i = 0; i < 6; i++){
-                std::string ch = std::to_string(i);
-                if((phases_present >> i) & 1){
-                    if(!mmpsu_state["phases"].contains(ch)){
-                        mmpsu_state["phases"][ch] = R"({})"_json;
-                    }
+                std::string ch = phase_names.at(i);//std::to_string(i);
+                if(!mmpsu_state["phases"].contains(ch)){
+                    mmpsu_state["phases"][ch] = json::object();
+                }
+                
+                if(mmpsu_state["phases"][ch]["present"] = (bool)((phases_present >> i) & 1)){
+                    mmpsu_state["phases"][ch]["overtemp"] = (bool)((phases_overtemp >> i) & 1);
                     if(mmpsu_state["phases"][ch]["enabled"] = (bool)((phases_enabled >> i) & 1)){
                         // i2c_mutex is already locked
                         mmpsu_state["phases"][ch]["current"] = mmpsu_get_phase_current(i2c_fd, i, comm_err);
@@ -171,7 +189,7 @@ int main(int argc, char *argv[]){
         if(!data_out_stream.good()){
             printf("Reopening output stream...\n");
             data_out_stream.close();
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            std::this_thread::sleep_for(std::chrono::seconds(100));
             umask(0);
             mknod(data_out_path, S_IFIFO|0666, 0);
             data_out_stream.open(data_out_path, std::ios::out);

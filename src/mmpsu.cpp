@@ -63,6 +63,12 @@ void close_i2c_connection(int fd){
     close(fd);
 }
 
+
+bool mmpsu_test_connection(int fd, MMPSUError& error){
+    int test = mmpsu_read_field(fd, PHASES_PRESENT, 50000, error);
+    return (test >= 64) || error != MMPSUError::NONE;
+}
+
 /**
  * @param timeout read and write timeout in microseconds
  */
@@ -82,7 +88,10 @@ int mmpsu_read_field(int fd, int field, int timeout, MMPSUError& error){
     // check that we can write the cmd byte
     int sel = select(fd + 1, NULL, &write_fds, NULL, &tv);
     if(sel > 0){
-        write(fd, &cmd_byte, 1);
+        if(write(fd, &cmd_byte, 1) != 1){
+            error = MMPSUError::I2C_WRITE_ERROR;
+            return 0;
+        }
     }else if(sel == 0){
         // timeout occurred
         error = MMPSUError::I2C_WRITE_TIMEOUT;
@@ -103,10 +112,15 @@ int mmpsu_read_field(int fd, int field, int timeout, MMPSUError& error){
     if(sel > 0){
         uint8_t buf[4];
         memset(buf, 0, 4);
-        read(fd, buf, 4);
+        int read_count = read(fd, buf, 4);
+        if(read_count < 4){
+            error = MMPSUError::I2C_READ_ERROR;
+            return 0;
+        }
         for(int i = 0; i < 4; i++){
             retval |= buf[i] << (i*8);
         }
+        
     }else if(sel == 0){
         // timeout occurred
         error = MMPSUError::I2C_READ_TIMEOUT;
@@ -134,7 +148,10 @@ void mmpsu_write_field(int fd, int field, int value, int timeout, MMPSUError& er
     // check that we can write the cmd byte
     int sel = select(fd + 1, NULL, &write_fds, NULL, &tv);
     if(sel > 0){
-        write(fd, &cmd_byte, 1);
+        if(write(fd, &cmd_byte, 1) != 1){
+            error = MMPSUError::I2C_WRITE_ERROR;
+            return;
+        }
     }else if(sel == 0){
         // timeout occurred
         error = MMPSUError::I2C_WRITE_TIMEOUT;
@@ -158,7 +175,10 @@ void mmpsu_write_field(int fd, int field, int value, int timeout, MMPSUError& er
         for(int i = 0; i < 4; i++){
             buf[i] = (value >> (i*8)) & 0xFF;
         }
-        write(fd, buf, 4);
+        if(write(fd, buf, 4) != 4){
+            error = MMPSUError::I2C_WRITE_ERROR;
+            return;
+        }
     }else if(sel == 0){
         // timeout occurred
         error = MMPSUError::I2C_WRITE_TIMEOUT;
@@ -192,6 +212,12 @@ int mmpsu_get_phases_present(int fd, MMPSUError& error){
 int mmpsu_get_phases_enabled(int fd, MMPSUError& error){
     return mmpsu_read_field(fd, PHASES_ENABLED, 50000, error);
 }
+
+
+int mmpsu_get_phases_in_overtemp(int fd, MMPSUError& error){
+    return mmpsu_read_field(fd, PHASES_IN_OVERTEMP, 50000, error);
+}
+
 
 float mmpsu_get_phase_current(int fd, int channel, MMPSUError& error){
     int i_mv = 0;
@@ -248,5 +274,5 @@ float mmpsu_get_phase_duty_cycle(int fd, int channel, MMPSUError& error){
             break;
         }
     }
-    return duty/5440.0;
+    return 100.0*duty/5440.0;
 }

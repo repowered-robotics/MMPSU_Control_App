@@ -1,7 +1,7 @@
 const phase_names = ["a", "b", "c", "d", "e", "f"];
 
 
-var app =angular.module('mmpsuApp', []);
+var app = angular.module('mmpsuApp', []);
 
 app.controller('mmpsuAppCtl', function($scope) {
     $scope.socket = io();
@@ -10,7 +10,14 @@ app.controller('mmpsuAppCtl', function($scope) {
         enabled: false,
         connected: false,
         vout_setpt: 12.0,
-        iout_limit: 150.0
+        iout_limit: 150.0,
+        vout_str: "0.0 V",
+        iout_str: "0.0 A",
+        phases: {},
+        enabled_str: "---",
+        enabled_style: {color:'white'},
+        connected_str: "NOT CONNECTED",
+        connected_style: {color: 'red'}
     };
 
     $scope.socket.on('update', function(data){
@@ -19,130 +26,67 @@ app.controller('mmpsuAppCtl', function($scope) {
                 // 
                 $scope.mmpsu.connected = true;
                 $scope.mmpsu.connected_str = "CONNECTED";
+                $scope.mmpsu.connected_style = {color:'green'};
                 $scope.mmpsu.enabled = data.enabled;
                 if($scope.mmpsu.enabled){
                     $scope.mmpsu.enabled_str = "ENABLED";
+                    $scope.mmpsu.enabled_style = {color:'green'};
                 }else{
                     $scope.mmpsu.enabled_str = "DISABLED";
+                    $scope.mmpsu.enabled_style = {color:'red'};
                 }
                 $scope.mmpsu.vout = data.vout;
+                $scope.mmpsu.vout_str = $scope.mmpsu.vout.toFixed(3) + " V";
+                for(var ch in data.phases){
+                    $scope.mmpsu.phases[ch].present = data.phases[ch].present;
+                    if($scope.mmpsu.phases[ch].present){
+                        // things to do when present
+                        $scope.mmpsu.phases[ch].present_str = "YES";
+                        $scope.mmpsu.phases[ch].enabled_str = (data.phases[ch].enabled ? "YES": "NO");
+                        $scope.mmpsu.phases[ch].duty_cycle_str = data.phases[ch].duty_cycle.toFixed(2);
+                        $scope.mmpsu.phases[ch].current_str = data.phases[ch].current.toFixed(2) + " A";
+                        $scope.mmpsu.phases[ch].overtemp = data.phases[ch].overtemp;
+                        $scope.mmpsu.phases[ch].overtemp_style = (data.phases[ch].overtemp ? {'background-color':"red"} : {'background-color':"gray"});
+                    }else{
+                        // things to do when not present
+                        $scope.mmpsu.phases[ch].present_str = "NO";
+                        $scope.mmpsu.phases[ch].enabled_str = "---";
+                        $scope.mmpsu.phases[ch].duty_cycle_str = "---";
+                        $scope.mmpsu.phases[ch].current_str = "---";
+                        $scope.mmpsu.phases[ch].overtemp_style = {'background-color':"gray"};
+                    }
+                }
             }else{
                 $scope.mmpsu.connected = false;
                 $scope.mmpsu.connected_str = "NOT CONNECTED";
+                $scope.mmpsu.connected_style = {color:'red'};
                 $scope.mmpsu.enabled_str = "---";
+                $scope.mmpsu.enabled_style = {color:'white'};
             }
         });
     });
-});
 
+    $scope.enableMmpsu = function() {
+        $scope.socket.emit('configure', {enabled: true});
+    };
 
-function get_mmpsu_voltage(){
-    var xhr = new XMLHttpRequest();
-    xhr.open("GET", "mmpsu/poll?type=voltage", false);
-    xhr.send( null );
-    document.getElementById("voltage").innerHTML = xhr.responseText;
-}
+    $scope.disableMmpsu = function() {
+        $scope.socket.emit('configure', {enabled: false});
+    };
 
-function getConnected(){
-    var xhr = new XMLHttpRequest();
-    xhr.open("GET", "mmpsu/poll?type=connected", false);
-    xhr.send( null );
-    let resp = xhr.responseText;
-
-    if(resp === "True"){
-        document.getElementById("connection-status").innerHTML = "Connected";
-    }else{
-        document.getElementById("connection-status").innerHTML = "Not Connected";
-    }
-    
-}
-
-function getAllData(){
-    var xhr = new XMLHttpRequest();
-    xhr.open("GET", "mmpsu/poll?type=all", false);
-    xhr.send( null );
-    var all_data = JSON.parse(xhr.responseText);
-
-    if(all_data.connected){
-        var conn_status = document.getElementById("connection-status");
-        conn_status.setAttribute("style", "color: green;");
-        conn_status.innerHTML = "CONNECTED";
-        
-        if(all_data.output_enabled){
-            document.getElementById("enabled-status").innerHTML = "ENABLED";
+    $scope.toggleEnabled = function() {
+        if($scope.mmpsu.enabled){
+            $scope.disableMmpsu();
         }else{
-            document.getElementById("enabled-status").innerHTML = "DISABLED";
+            $scope.enableMmpsu();
         }
+    };
 
-        document.getElementById("voltage").innerHTML = all_data.voltage.toFixed(3) + " V";
-        // document.getElementById("current").innerHTML = all_data.current.toFixed(3) + " A";
-        
-        let present = all_data.present;
-        let enabled = all_data.enabled;
-        let current = all_data.current;
-        let duty_cycle = all_data.duty_cycle;
-        let overtemps = all_data.overtemp;
-
-        var present_statuses = [false, false, false, false, false, false];
-        var enabled_statuses = [false, false, false, false, false, false];
-        var overtemp_statuses = [false, false, false, false, false, false];
-
-        /* set corresponding statuses member to true if phase is present */
-        for(var i in present){
-            present_statuses[present[i]] = true;
-        }
-        /* set corresponding statuses member to true if phase is enabled */
-        for(var i in enabled){
-            enabled_statuses[enabled[i]] = true;
-        }
-        /* set corresponding statuses member to true if phase is enabled */
-        for(var i in overtemps){
-            overtemp_statuses[overtemps[i]] = true;
-        }
-
-        /* set elements for each statuses member */
-        for(var i in present_statuses){
-            var phase_name = phase_names[i];
-            var present_id = "phase-" + phase_name + "-present";
-            var enabled_id = "phase-" + phase_name + "-enabled";
-            var current_id = "phase-" + phase_name + "-current";
-            var duty_cycle_id = "phase-" + phase_name + "-duty-cycle";
-            var overtemp_id = "phase-" + phase_name + "-overtemp";
-            if(present_statuses[i]){
-                document.getElementById(present_id).innerHTML = "YES";
-                if(enabled_statuses[i]){
-                    document.getElementById(enabled_id).innerHTML = "YES";
-                }else{
-                    document.getElementById(enabled_id).innerHTML = "NO";
-                }
-
-                if(overtemp_statuses[i]){
-                    document.getElementById(overtemp_id).setAttribute("style", "background-color: red;");
-                }else{
-                    document.getElementById(overtemp_id).setAttribute("style", "background-color: gray;");
-                }
-                document.getElementById(current_id).innerHTML = current[i].toFixed(3) + " A";
-                document.getElementById(duty_cycle_id).innerHTML = (duty_cycle[i]*100.0).toFixed(2) + " &percnt;";
-            }else{
-                document.getElementById(present_id).innerHTML = "NO";
-                document.getElementById(enabled_id).innerHTML = "NO";
-                document.getElementById(current_id).innerHTML = "--- A";
-                document.getElementById(duty_cycle_id).innerHTML = "--- &percnt;";
-                document.getElementById(overtemp_id).setAttribute("style", "background-color: gray;");
-            }
-        }
-
-    }else{
-        var conn_status = document.getElementById("connection-status");
-        conn_status.setAttribute("style", "color: red;");
-        conn_status.innerHTML = "NOT CONNECTED";
-        
-        document.getElementById("enabled-status").innerHTML = "---";
-        document.getElementById("voltage").innerHTML = "--- V"
-        document.getElementById("current").innerHTML = "--- A";
+    $scope.setVoltage = function() {
+        config = {vout_setpt: $scope.mmpsu.vout_setpt};
+        $scope.socket.emit('configure', config);
     }
-
-}
+});
 
 function appendDebugMessage(msg){
     var window = document.getElementById("debugger-window");
@@ -153,87 +97,3 @@ function appendDebugMessage(msg){
     scroll += lastLine.offsetHeight + 0.5;
     window.scrollTop = scroll;
 }
-
-function pollForData(interval){
-    // let eventSource = new EventSource("http://adams-pi3.local:5000/debug");
-
-    // eventSource.onmessage = function(event){
-    //     appendDebugMessage(event.data);
-    // };
-
-    setInterval(function(){
-        getAllData();
-    }, interval);
-}
-
-function toggle_enable_mmspu(){
-    var btn = document.getElementById("toggle-enable-btn");
-    
-    if(btn.innerHTML === "ENABLE"){
-        enable_mmspu();
-        btn.innerHTML = "DISABLE";
-    }else{
-        disable_mmspu();
-        btn.innerHTML = "ENABLE";
-    }
-
-}
-
-function setCurrentLimit(phase_number){
-    var name = phase_names[phase_number];
-    limit_id = "phase-" + name + "-limit-entry";
-    limit = document.getElementById(limit_id).value
-    var obj = new Object();
-    obj[name] = limit;
-    var url_str = "mmpsu/config?phase_current_limits=" + JSON.stringify(obj);
-    var xhr = new XMLHttpRequest();
-    xhr.open("GET", url_str, false);
-    xhr.send( null );
-}
-
-function setTotalCurrentLimit(){
-    var limit = parseFloat(document.getElementById("total-ilimit-entry").value);
-    var phase_count = 0;
-    var phase_names_present = [];
-    for(var i in phase_names){
-        var present_id = "phase-" + phase_names[i] + "-present";
-        var present_str = document.getElementById(present_id).innerHTML;
-        if(present_str.toUpperCase() === "YES"){
-            phase_count++;
-            phase_names_present.push(phase_names[i]);
-        }
-    }
-    if(phase_count > 0){
-        var per_phase_limit = limit/phase_count;
-        for(var i in phase_names_present){
-            var entry_id = "phase-" + phase_names_present[i] + "-limit-entry";
-            var btn_id = "phase-" + phase_names_present[i] + "-set-limit-btn";
-            document.getElementById(entry_id).value = per_phase_limit.toFixed(3);
-            document.getElementById(btn_id).click();
-        }
-    }
-    
-    
-}
-
-function enable_mmspu() {
-    var xhr = new XMLHttpRequest();
-    xhr.open("GET", "mmpsu/config?enable=True", false);
-    xhr.send( null );
-}
-
-function disable_mmspu(){
-    var xhr = new XMLHttpRequest();
-    xhr.open("GET", "mmpsu/config?enable=False", false);
-    xhr.send( null );
-}
-
-
-function setVoltage(){
-    var entry = document.getElementById("vset-entry")
-    var url_str = "mmpsu/config?voltage=" + entry.value;
-    var xhr = new XMLHttpRequest();
-    xhr.open("GET", url_str, false);
-    xhr.send( null );
-}
-
