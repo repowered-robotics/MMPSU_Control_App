@@ -23,6 +23,24 @@ enum class MMPSUError {
   I2C_ERROR
 };
 
+typedef enum {
+  ONE_PHASE_INIT,
+  TWO_PHASE_INIT,
+  THREE_PHASE_INIT,
+  FOUR_PHASE_INIT,
+  FIVE_PHASE_INIT,
+  SIX_PHASE_INIT,
+  ONE_PHASE,
+  TWO_PHASE,
+  THREE_PHASE,
+  FOUR_PHASE,
+  FIVE_PHASE,
+  SIX_PHASE,
+  OUTPUT_OFF,
+  FAULT
+} Mode_TypeDef;
+
+
 enum MMPSUMemMap {
   OUTPUT_ENABLED,
   VOUT_MEASURED,
@@ -49,34 +67,19 @@ enum MMPSUMemMap {
   PHASE_F_CURRENT_LIMIT,
   PHASES_IN_OVERTEMP,
   DEBUG_MODE,
+  DEVELOPER_MODE,
+  SYSTEM_STATE,
+  VOLTAGE_KP,
+  VOLTAGE_KI,
+  CURRENT_KP,
+  CURRENT_KI,
   NUM_FIELDS
 };
 
-// class PhaseData {
-// public:
-//   PhaseData();
-//   PhaseData(const PhaseData& ph);
-//   bool present;
-//   bool enabled;
-//   bool overtemp;
-//   float duty_cycle;
-//   float current;
-// };
 
-// class MMPSUState {
-// private:
-//   std::map<int, PhaseData> m_phases;
-// public:
-//   bool connected;
-//   bool enabled;
-//   int phases_present;
-//   int phases_enabled;
-//   int phases_overtemp;
-//   float vout;
-//   float vout_setpt;
-//   void update_phase_data(int ind, PhaseData phase);
-//   PhaseData get_phase_data(int ind);
-// };
+typedef void (*mmpsu_set_field_bool)(int fd, bool value, MMPSUError& err);
+typedef void (*mmpsu_set_field_int)(int fd, int value, MMPSUError& err);
+typedef void (*mmpsu_set_field_float)(int fd, float value, MMPSUError& err);
 
 void start_i2c_connection(int fd, uint8_t addr, MMPSUError& error);
 
@@ -103,3 +106,17 @@ int mmpsu_get_phases_in_overtemp(int fd, MMPSUError& error);
 float mmpsu_get_phase_current(int fd, int channel, MMPSUError& error);
 
 float mmpsu_get_phase_duty_cycle(int fd, int channel, MMPSUError& error);
+
+void mmpsu_set_developer_mode(int fd, bool on, MMPSUError& error);
+
+void mmpsu_set_voltage_kp(int fd, int k, MMPSUError& error);
+
+void mmpsu_set_voltage_ki(int fd, int k, MMPSUError& error);
+
+void mmpsu_set_current_kp(int fd, int k, MMPSUError& error);
+
+void mmpsu_set_current_ki(int fd, int k, MMPSUError& error);
+
+std::string mmpsu_get_state(int fd, MMPSUError& error);
+
+std::string decode_state(int state);

@@ -5,7 +5,7 @@ BIN_PATH=bin
 CC=gcc
 CCFLAGS=-Wall -lm -lpthread
 CXX=g++
-CXXFLAGS=-std=c++11 -Wall -lm -lpthread
+CXXFLAGS=-std=c++17 -Wall -lm -lpthread
 CXXOBJFLAGS=$(CXXFLAGS) -c
 
 TARGET_NAME=mmpsu

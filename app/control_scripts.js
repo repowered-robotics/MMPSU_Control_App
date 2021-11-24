@@ -1,6 +1,3 @@
-const phase_names = ["a", "b", "c", "d", "e", "f"];
-
-
 var app = angular.module('mmpsuApp', []);
 
 app.controller('mmpsuAppCtl', function($scope) {
@@ -17,17 +14,19 @@ app.controller('mmpsuAppCtl', function($scope) {
         enabled_str: "---",
         enabled_style: {color:'white'},
         connected_str: "NOT CONNECTED",
-        connected_style: {color: 'red'}
+        connected_style: {color: 'red'},
+        devel_mode: false
     };
 
     $scope.socket.on('update', function(data){
-        $scope.apply(function(){
+        $scope.$apply(function(){
             if(data.connected){
                 // 
                 $scope.mmpsu.connected = true;
                 $scope.mmpsu.connected_str = "CONNECTED";
                 $scope.mmpsu.connected_style = {color:'green'};
                 $scope.mmpsu.enabled = data.enabled;
+                $scope.mmpsu.state = data.state;
                 if($scope.mmpsu.enabled){
                     $scope.mmpsu.enabled_str = "ENABLED";
                     $scope.mmpsu.enabled_style = {color:'green'};
@@ -67,11 +66,13 @@ app.controller('mmpsuAppCtl', function($scope) {
     });
 
     $scope.enableMmpsu = function() {
-        $scope.socket.emit('configure', {enabled: true});
+        var config =  {enabled: true};
+        $scope.socket.emit('configure', config);
     };
 
     $scope.disableMmpsu = function() {
-        $scope.socket.emit('configure', {enabled: false});
+        var config =  {enabled: false};
+        $scope.socket.emit('configure', config);
     };
 
     $scope.toggleEnabled = function() {
@@ -83,17 +84,44 @@ app.controller('mmpsuAppCtl', function($scope) {
     };
 
     $scope.setVoltage = function() {
-        config = {vout_setpt: $scope.mmpsu.vout_setpt};
+        config = {vout_setpt: parseFloat($scope.mmpsu.vout_setpt)};
         $scope.socket.emit('configure', config);
-    }
+    };
+
+    $scope.setDeveloperMode = function() {
+        config = {devel_mode: $scope.mmpsu.devel_mode};
+        $scope.socket.emit('configure', config);
+    };
+
+    $scope.setVoltageKp = function() {
+        config = {voltage_kp: $scope.mmpsu.voltage_kp};
+        $scope.socket.emit('configure', config);
+    };
+
+    $scope.setVoltageKi = function() {
+        config = {voltage_ki: $scope.mmpsu.voltage_ki};
+        $scope.socket.emit('configure', config);
+    };
+
+    $scope.setCurrentKp = function() {
+        config = {current_kp: $scope.mmpsu.current_kp};
+        $scope.socket.emit('configure', config);
+    };
+
+    $scope.setCurrentKi = function() {
+        config = {current_ki: $scope.mmpsu.current_ki};
+        $scope.socket.emit('configure', config);
+    };
+
+
 });
 
-function appendDebugMessage(msg){
-    var window = document.getElementById("debugger-window");
-    var existingText = window.innerHTML;
-    window.innerHTML = existingText + "<p>" + msg + "</p>";
-    var lastLine = window.lastElementChild;
-    var scroll = window.scrollTop;
-    scroll += lastLine.offsetHeight + 0.5;
-    window.scrollTop = scroll;
-}
+// function appendDebugMessage(msg){
+//     var window = document.getElementById("debugger-window");
+//     var existingText = window.innerHTML;
+//     window.innerHTML = existingText + "<p>" + msg + "</p>";
+//     var lastLine = window.lastElementChild;
+//     var scroll = window.scrollTop;
+//     scroll += lastLine.offsetHeight + 0.5;
+//     window.scrollTop = scroll;
+// }

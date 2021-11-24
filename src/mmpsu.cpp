@@ -276,3 +276,68 @@ float mmpsu_get_phase_duty_cycle(int fd, int channel, MMPSUError& error){
     }
     return 100.0*duty/5440.0;
 }
+
+
+void mmpsu_set_developer_mode(int fd, bool on, MMPSUError& error){
+    int value =(int)on;
+    mmpsu_write_field(fd, VOUT_SETPOINT, value, 50000, error);
+}
+
+
+void mmpsu_set_voltage_kp(int fd, int k, MMPSUError& error){
+    mmpsu_write_field(fd, VOLTAGE_KP, k, 50000, error);
+}
+
+void mmpsu_set_voltage_ki(int fd, int k, MMPSUError& error){
+    mmpsu_write_field(fd, VOLTAGE_KI, k, 50000, error);
+}
+
+void mmpsu_set_current_kp(int fd, int k, MMPSUError& error){
+    mmpsu_write_field(fd, CURRENT_KP, k, 50000, error);
+}
+
+void mmpsu_set_current_ki(int fd, int k, MMPSUError& error){
+    mmpsu_write_field(fd, CURRENT_KI, k, 50000, error);
+}
+
+
+std::string mmpsu_get_state(int fd, MMPSUError& error){
+    int state = mmpsu_read_field(fd, SYSTEM_STATE, 50000, error);
+    return decode_state(state);
+}
+
+
+std::string decode_state(int state){
+    switch(state){
+        case ONE_PHASE_INIT:
+            return "ONE_PHASE_INIT";
+        case TWO_PHASE_INIT:
+            return "TWO_PHASE_INIT";
+        case THREE_PHASE_INIT:
+            return "THREE_PHASE_INIT";
+        case FOUR_PHASE_INIT:
+            return "FOUR_PHASE_INIT";
+        case FIVE_PHASE_INIT:
+            return "FIVE_PHASE_INIT";
+        case SIX_PHASE_INIT:
+            return "SIX_PHASE_INIT";
+        case ONE_PHASE:
+            return "ONE_PHASE";
+        case TWO_PHASE:
+            return "TWO_PHASE";
+        case THREE_PHASE:
+            return "THREE_PHASE";
+        case FOUR_PHASE:
+            return "FOUR_PHASE";
+        case FIVE_PHASE:
+            return "FIVE_PHASE";
+        case SIX_PHASE:
+            return "SIX_PHASE";
+        case OUTPUT_OFF:
+            return "OUTPUT_OFF";
+        case FAULT:
+            return "FAULT";
+        default:
+            return "UNKNOWN";
+    }
+}

@@ -45,16 +45,16 @@
             <span class="btn-container">
                 <span class="label"> </span> 
                 <br />
-                <button id="enable-btn" type="submit" ng-click="enableMmspu()">ENABLE</button>
-                <button id="disable-btn" type="submit" ng-click="disableMmspu()">DISABLE</button>
+                <button id="enable-btn" ng-click="enableMmpsu()">ENABLE</button>
+                <button id="disable-btn" ng-click="disableMmpsu()">DISABLE</button>
                 <br />
                 <span class="label"> </span> 
                 <br />
                 <span class="label"> </span> 
                 <br />
-                <button id="set-voltage-btn" type="submit" onclick="setVoltage()">SET</button> 
+                <button id="set-voltage-btn" type="submit" ng-click="setVoltage()">SET</button> 
                 <br />
-                <button id="set-total-ilimit-btn" type="submit" onclick="setTotalCurrentLimit()">SET</button> 
+                <button id="set-total-ilimit-btn" type="submit" ng-click="setTotalCurrentLimit()">SET</button> 
             </span>
             
         </div>
@@ -63,6 +63,17 @@
             <h2>UART Debug Output</h3>
             <div class="debug-window" id="debugger-window">
 
+            </div>
+
+            <div>
+                <input type="checkbox" ng-model="mmpsu.devel_mode" ng-change="setDeveloperMode()" />Developer Mode
+                <div ng-show="mmpsu.devel_mode">
+                    <p ng-model="mmpsu.state"> </p>
+                    <input class="entry" type="text" ng-model="mmpsu.voltage_kp" /> <button ng-click="setVoltageKp()">SET V Kp</button>
+                    <input class="entry" type="text" ng-model="mmpsu.voltage_ki" /> <button ng-click="setVoltageKi()">SET V Ki</button>
+                    <input class="entry" type="text" ng-model="mmpsu.current_kp" /> <button ng-click="setCurrentKp()">SET I Kp</button>
+                    <input class="entry" type="text" ng-model="mmpsu.current_ki" /> <button ng-click="setCurrentKi()">SET I Ki</button>
+                </div>
             </div>
         </span>
 

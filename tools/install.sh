@@ -1,13 +1,13 @@
 #! /bin/bash
 
 echo "switching to correct node version..."
-nvm use 16 > /dev/null
+# nvm use 16 > /dev/null
 
 echo "Checking user groups..."
 
-REQ_GROUPS=("gpio" "kmem" "spi")
+REQ_GROUPS=("gpio" "kmem" "i2c" "dialout")
 
-for GRP in ${TEST_GROUPS[@]}; do
+for GRP in ${REQ_GROUPS[@]}; do
     if ! [ $(getent group $GRP | grep $USER) ]
     then
         echo "Adding $USER to group $GRP..."
@@ -29,7 +29,10 @@ Description=Repowered Robotics MMPSU daemon
 
 [Service]
 Type=simple
+User=mmpsu
 ExecStart=$APP_DIR/bin/mmpsu $I2C_PATH
+Restart=always
+RestartSec=1
 
 [Install]
 WantedBy=multi-user.target\

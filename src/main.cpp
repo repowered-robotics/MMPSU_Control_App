@@ -10,15 +10,20 @@
 #include <mutex>
 #include <chrono>
 #include <vector>
+#include <csignal>
+#include <typeinfo>
+#include <any>
 #include "json.hpp"
 #include "mmpsu.h"
-#include <csignal>
 
 using json = nlohmann::json;
 
 char * data_out_path = "/tmp/mmpsu_data_out";
 char * data_in_path = "/tmp/mmpsu_data_in";
-char * i2c_path;
+char * debug_out_path = "/tmp/mmpsu_debug_out";
+char * i2c_path = NULL;
+char * debug_path = NULL;
+int uart_fd = -1;
 
 std::mutex done_mtx;
 bool done =  false;
@@ -29,7 +34,24 @@ json mmpsu_state = {
     {"update_time", 0.0},
     {"enabled", false},
     {"vout_setpt", 0.0},
-    {"vout", 0.0}
+    {"vout", 0.0},
+    {"devel_mode", false},
+    {"state", "UNKNOWN"},
+    {"voltage_kp", 1},
+    {"voltage_ki", 1},
+    {"current_kp", 1},
+    {"current_ki", 1}
+};
+
+/* map of fields to setter functions */
+std::map<std::string, std::any> mmpsu_setters {
+    {"enabled", std::any_cast<mmpsu_set_field_bool>(mmpsu_set_enabled)},
+    {"vout_setpt", std::any_cast<mmpsu_set_field_float>(mmpsu_set_vout)},
+    {"devel_mode", std::any_cast<mmpsu_set_field_bool>(mmpsu_set_developer_mode)},
+    {"voltage_kp", std::any_cast<mmpsu_set_field_int>(mmpsu_set_voltage_kp)},
+    {"voltage_ki", std::any_cast<mmpsu_set_field_int>(mmpsu_set_voltage_ki)},
+    {"current_kp", std::any_cast<mmpsu_set_field_int>(mmpsu_set_current_kp)},
+    {"current_ki", std::any_cast<mmpsu_set_field_int>(mmpsu_set_current_ki)},
 };
 
 std::map<int, std::string> phase_names { {0,"a"}, {1,"b"}, {2,"c"}, {3,"d"}, {4,"e"}, {5,"f"}, };
@@ -59,10 +81,34 @@ bool reconnect_i2c(char * fname, int& fd, uint8_t addr, MMPSUError& error){
 }
 
 /**
+ * @brief thread for reading debug info from MMPSU over UART
+ */
+void debug(){
+    if(debug_path != NULL){
+        std::fstream uart_stream(debug_path, std::ios::out | std::ios::in);
+        umask(0);
+        mknod(debug_out_path, S_IFIFO|0666, 0);
+        std::ofstream debug_stream(debug_out_path, std::ios::out);
+
+        std::string line_in;
+        while(!done){
+            std::getline(uart_stream, line_in);
+
+            debug_stream << line_in << std::endl;
+            debug_stream.flush();
+        }
+    }
+}
+
+/**
  * @brief Thread for listening to a named pipe and updating mmpsu accoringly
  */
 void listener(){
-    std::ifstream data_in_stream;
+    // mmpsu_setters["enabled"] = std::any_cast<mmpsu_set_field_bool>(mmpsu_set_enabled);
+
+    umask(0);
+    mknod(data_in_path, S_IFIFO|0666, 0);
+    std::ifstream data_in_stream(data_in_path, std::ios::in);
     // data_in_stream.open(data_in_path, std::ios::in);
     std::string input;
 
@@ -78,40 +124,63 @@ void listener(){
         }
 
         // check if characters are available in the stream
-        if(data_in_stream.peek() == EOF){
-            input = "{}";
-        }else{
-            std::getline(data_in_stream, input);
-        }
+        std::getline(data_in_stream, input);
         
         auto obj = json::parse(input.c_str());
         
+        // for each item in the incoming object
+        for(auto& item : obj.items()){
+            std::string key = item.key();
+            auto value = item.value();
 
-        if(obj.contains("enabled")){
-            if(obj["enabled"] != mmpsu_state["enabled"]){
-                i2c_mutex.lock();
-                // Do the I2C transaction to set enabled
-                mmpsu_set_enabled(i2c_fd, obj["enabled"], comm_err);
-                i2c_mutex.unlock();
+            if(mmpsu_state.contains(key)){
+                const std::type_info& info = typeid(value);
+                const std::type_info& ref_info = typeid(mmpsu_state[key]);
+                if(info.hash_code() == ref_info.hash_code()){
+                    // types match
+                    if(value != mmpsu_state[key]){
+                        // value is changing
 
-                mmpsu_state_mtx.lock();
-                mmpsu_state["enabled"] = obj["enabled"];
-                mmpsu_state_mtx.unlock();
+                        if(mmpsu_setters.find(key) != mmpsu_setters.end()){
+                            // we have a setter for it
+                            i2c_mutex.lock();
+
+                            /* call the associated function */
+                            try{
+                                /* check each possible type, cast as necessary */
+                                if(info.hash_code() == typeid(bool).hash_code()){
+                                    std::any_cast<mmpsu_set_field_bool>(mmpsu_setters[key])(i2c_fd, value, comm_err);
+                                }else if(info.hash_code() == typeid(int).hash_code()){
+                                    std::any_cast<mmpsu_set_field_int>(mmpsu_setters[key])(i2c_fd, value, comm_err);
+                                }else if(info.hash_code() == typeid(float).hash_code()){
+                                    std::any_cast<mmpsu_set_field_float>(mmpsu_setters[key])(i2c_fd, value, comm_err);
+                                }else{
+                                    std::cout << "Cool type bro (" << info.name() << "), send it again..." << std::endl;
+                                }
+                            }catch(const std::bad_any_cast& err) {
+                                std::cout << "Bad cast occurred: " << err.what() << std::endl;
+                            }
+                            i2c_mutex.unlock();
+                        }else{
+                            std::cout << "We don't have a setter function for " << key << std::endl;
+                        }
+                        
+                        mmpsu_state_mtx.lock();
+                        mmpsu_state[key] = value; // stash the value in the state object
+                        mmpsu_state_mtx.unlock();
+                    }
+                }else{
+                    std::cout << "mmpsu_state[" << key << "] isn't of type " << info.name() << "; it is of type " << ref_info.name() << std::endl;
+                }
+            }else{
+                std::cout << "mmpsu_state doesn't contain " << key << std::endl;
             }
-        }
-        if(obj.contains("vout_setpt")){
-            if(obj["vout_setpt"] != mmpsu_state["vout_setpt"]){
-                i2c_mutex.lock();
-                // Do the I2C transaction to set vout
-                mmpsu_set_vout(i2c_fd, obj["vout_setpt"], comm_err);
-                i2c_mutex.unlock();
 
-                mmpsu_state_mtx.lock();
-                mmpsu_state["vout_setpt"] = obj["vout_setpt"];
-                mmpsu_state_mtx.unlock();
-            }
-        }
+        } 
+        /* end foreach key in obj */
+
     }
+    /* end while not done */
     printf("Listener thread is exiting...\n");
     data_in_stream.close();
 }
@@ -131,6 +200,11 @@ int main(int argc, char *argv[]){
     double start_time = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()/1.0e9;
 
     std::thread listener_thread(listener);
+
+    if(argc > 2){
+        debug_path = argv[2];
+    }
+    std::thread debug_thread(debug);
 
     umask(0);
     mknod(data_out_path, S_IFIFO|0666, 0);
@@ -153,11 +227,12 @@ int main(int argc, char *argv[]){
             }
         }else{
             /* MMPSU is connected
-            ==== update the MMPSU state and print to stream ==== */
+            ==== update the MMPSU state ==== */
             mmpsu_state["vout"] = mmpsu_get_vout(i2c_fd, comm_err); // read vout measured
             int phases_present = mmpsu_get_phases_present(i2c_fd, comm_err);
             int phases_enabled = mmpsu_get_phases_enabled(i2c_fd, comm_err);
             int phases_overtemp = mmpsu_get_phases_in_overtemp(i2c_fd, comm_err);
+            mmpsu_state["state"] = mmpsu_get_state(i2c_fd, comm_err);
 
             /* these numbers must always be less-than 64 if they are valid */
             mmpsu_state["connected"] = comm_err == MMPSUError::NONE;
