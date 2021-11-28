@@ -23,6 +23,8 @@ fi
 
 I2C_PATH=/dev/i2c-1
 
+DEBUG_PATH=/dev/ttyAMA0
+
 echo "\
 [Unit]
 Description=Repowered Robotics MMPSU daemon
@@ -30,7 +32,7 @@ Description=Repowered Robotics MMPSU daemon
 [Service]
 Type=simple
 User=mmpsu
-ExecStart=$APP_DIR/bin/mmpsu $I2C_PATH
+ExecStart=$APP_DIR/bin/mmpsu $I2C_PATH $DEBUG_PATH
 Restart=always
 RestartSec=1
 

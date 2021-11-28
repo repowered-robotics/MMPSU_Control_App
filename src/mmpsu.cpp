@@ -300,8 +300,11 @@ void mmpsu_set_current_ki(int fd, int k, MMPSUError& error){
     mmpsu_write_field(fd, CURRENT_KI, k, 50000, error);
 }
 
+int mmpsu_get_state(int fd, MMPSUError& error){
+    return mmpsu_read_field(fd, SYSTEM_STATE, 50000, error);
+}
 
-std::string mmpsu_get_state(int fd, MMPSUError& error){
+std::string mmpsu_get_state_str(int fd, MMPSUError& error){
     int state = mmpsu_read_field(fd, SYSTEM_STATE, 50000, error);
     return decode_state(state);
 }

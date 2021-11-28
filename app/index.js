@@ -8,13 +8,13 @@ const io = new Server(server);
 const filesys = require('fs');
 const readData = filesys.createReadStream("/tmp/mmpsu_data_out");
 readData.setEncoding('UTF8');
-const readDebug = filesys.createReadStream("/tmp/mmpsu_debug_out");
-readDebug.setEncoding('UTF8');
+// const readDebug = filesys.createReadStream("/tmp/mmpsu_debug_out");
+// readDebug.setEncoding('UTF8');
 const writeData = filesys.createWriteStream("/tmp/mmpsu_data_in");
 
-readDebug.on('data', (data) => {
-    io.emit('debug', data);
-});
+// readDebug.on('data', (data) => {
+//     io.emit('debug', data);
+// });
 
 readData.on('data', (data) => {
     try{

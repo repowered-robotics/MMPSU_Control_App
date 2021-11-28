@@ -15,7 +15,13 @@ app.controller('mmpsuAppCtl', function($scope) {
         enabled_style: {color:'white'},
         connected_str: "NOT CONNECTED",
         connected_style: {color: 'red'},
-        devel_mode: false
+        devel_mode: false,
+        system_state: 0,
+        state_str: "OUTPUT_OFF",
+        voltage_kp: 1,
+        voltage_ki: 32,
+        current_kp: 8,
+        current_ki: 13
     };
 
     $scope.socket.on('update', function(data){
@@ -27,6 +33,7 @@ app.controller('mmpsuAppCtl', function($scope) {
                 $scope.mmpsu.connected_style = {color:'green'};
                 $scope.mmpsu.enabled = data.enabled;
                 $scope.mmpsu.state = data.state;
+                $scope.mmpsu.state_str = data.state_str;
                 if($scope.mmpsu.enabled){
                     $scope.mmpsu.enabled_str = "ENABLED";
                     $scope.mmpsu.enabled_style = {color:'green'};
@@ -94,22 +101,22 @@ app.controller('mmpsuAppCtl', function($scope) {
     };
 
     $scope.setVoltageKp = function() {
-        config = {voltage_kp: $scope.mmpsu.voltage_kp};
+        config = {voltage_kp: parseFloat($scope.mmpsu.voltage_kp)};
         $scope.socket.emit('configure', config);
     };
 
     $scope.setVoltageKi = function() {
-        config = {voltage_ki: $scope.mmpsu.voltage_ki};
+        config = {voltage_ki: parseFloat($scope.mmpsu.voltage_ki)};
         $scope.socket.emit('configure', config);
     };
 
     $scope.setCurrentKp = function() {
-        config = {current_kp: $scope.mmpsu.current_kp};
+        config = {current_kp: parseFloat($scope.mmpsu.current_kp)};
         $scope.socket.emit('configure', config);
     };
 
     $scope.setCurrentKi = function() {
-        config = {current_ki: $scope.mmpsu.current_ki};
+        config = {current_ki: parseFloat($scope.mmpsu.current_ki)};
         $scope.socket.emit('configure', config);
     };
 

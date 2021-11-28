@@ -65,10 +65,10 @@
 
             </div>
 
-            <div>
+            <div class="entry-container">
                 <input type="checkbox" ng-model="mmpsu.devel_mode" ng-change="setDeveloperMode()" />Developer Mode
                 <div ng-show="mmpsu.devel_mode">
-                    <p ng-model="mmpsu.state"> </p>
+                    <p><span>STATE: </span> <span ng-model="mmpsu.state_str"></span> </p>
                     <input class="entry" type="text" ng-model="mmpsu.voltage_kp" /> <button ng-click="setVoltageKp()">SET V Kp</button>
                     <input class="entry" type="text" ng-model="mmpsu.voltage_ki" /> <button ng-click="setVoltageKi()">SET V Ki</button>
                     <input class="entry" type="text" ng-model="mmpsu.current_kp" /> <button ng-click="setCurrentKp()">SET I Kp</button>

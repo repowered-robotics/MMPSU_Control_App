@@ -117,6 +117,8 @@ void mmpsu_set_current_kp(int fd, int k, MMPSUError& error);
 
 void mmpsu_set_current_ki(int fd, int k, MMPSUError& error);
 
-std::string mmpsu_get_state(int fd, MMPSUError& error);
+int mmpsu_get_state(int fd, MMPSUError& error);
+
+std::string mmpsu_get_state_str(int fd, MMPSUError& error);
 
 std::string decode_state(int state);
