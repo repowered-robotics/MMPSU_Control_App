@@ -42,7 +42,9 @@ json mmpsu_state = {
     {"voltage_ki", 1},
     {"current_kp", 1},
     {"current_ki", 1},
-    {"i2c_error_count", 0}
+    {"i2c_error_count", 0},
+    {"manual_mode", false},
+    {"phase_count", 0}
 };
 
 /* map of fields to setter functions */
@@ -54,6 +56,8 @@ std::map<std::string, std::any> mmpsu_setters {
     {"voltage_ki", std::any_cast<mmpsu_set_field_int>(mmpsu_set_voltage_ki)},
     {"current_kp", std::any_cast<mmpsu_set_field_int>(mmpsu_set_current_kp)},
     {"current_ki", std::any_cast<mmpsu_set_field_int>(mmpsu_set_current_ki)},
+    {"manual_mode", std::any_cast<mmpsu_set_field_bool>(mmpsu_set_manual_mode)},
+    {"phase_count", std::any_cast<mmpsu_set_field_int>(mmpsu_set_phase_count)}
 };
 
 /* map of fields to setter function types */
@@ -65,6 +69,8 @@ std::map<std::string, std::size_t> mmpsu_setter_types {
     {"voltage_ki", typeid(int).hash_code()},
     {"current_kp", typeid(int).hash_code()},
     {"current_ki", typeid(int).hash_code()},
+    {"manual_mode", typeid(bool).hash_code()},
+    {"phase_count", typeid(int).hash_code()}
 };
 
 std::map<int, std::string> phase_names { {0,"a"}, {1,"b"}, {2,"c"}, {3,"d"}, {4,"e"}, {5,"f"}, };

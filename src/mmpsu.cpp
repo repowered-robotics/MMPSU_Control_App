@@ -363,3 +363,13 @@ std::string decode_state(int state){
 int mmpsu_get_i2c_error_count(int fd, MMPSUError& error){
     return mmpsu_read_field(fd, I2C_ERROR_COUNT, 50000, error);
 }
+
+
+void mmpsu_set_manual_mode(int fd, bool manual_mode, MMPSUError& error){
+    int value = (manual_mode ? 1 : 0);
+    mmpsu_write_field(fd, MANUAL_MODE, value, 50000, error);
+}
+
+void mmpsu_set_phase_count(int fd, int phase_count, MMPSUError& error){
+    mmpsu_write_field(fd, PHASE_COUNT_REQUESTED, phase_count, 50000, error);
+}

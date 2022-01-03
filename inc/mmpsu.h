@@ -74,6 +74,8 @@ enum MMPSUMemMap {
   CURRENT_KP,
   CURRENT_KI,
   I2C_ERROR_COUNT,
+  MANUAL_MODE,
+  PHASE_COUNT_REQUESTED,
   NUM_FIELDS
 };
 
@@ -125,3 +127,7 @@ std::string mmpsu_get_state_str(int fd, MMPSUError& error);
 std::string decode_state(int state);
 
 int mmpsu_get_i2c_error_count(int fd, MMPSUError& error);
+
+void mmpsu_set_manual_mode(int fd, bool manual_mode, MMPSUError& error);
+
+void mmpsu_set_phase_count(int fd, int phase_count, MMPSUError& error);

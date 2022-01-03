@@ -22,7 +22,9 @@ app.controller('mmpsuAppCtl', function($scope) {
         voltage_ki: 32,
         current_kp: 8,
         current_ki: 13,
-        i2c_error_count: 0
+        i2c_error_count: 0,
+        manual_mode: false,
+        phase_count: 0
     };
 
     $scope.socket.on('update', function(data){
@@ -134,6 +136,15 @@ app.controller('mmpsuAppCtl', function($scope) {
         $scope.socket.emit('configure', config);
     };
 
+    $scope.setManualMode = function() {
+        config = {manual_mode: $scope.mmpsu.manual_mode};
+        $scope.socket.emit('configure', config);
+    }
+
+    $scope.setPhaseCount = function() {
+        config = {phase_count: $scope.mmpsu.phase_count};
+        $scope.socket.emit('configure', config);
+    }
 
 });
 

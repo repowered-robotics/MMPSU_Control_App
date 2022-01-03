@@ -75,6 +75,11 @@
                     <input class="entry" type="text" ng-model="mmpsu.current_kp" /> <button ng-click="setCurrentKp()">SET I Kp</button>
                     <input class="entry" type="text" ng-model="mmpsu.current_ki" /> <button ng-click="setCurrentKi()">SET I Ki</button>
                 </div>
+
+                <input type="checkbox" ng-model="mmpsu.manual_mode" ng-change="setManualMode()" />Manual Mode
+                <div ng-show="mmpsu.manual_mode">
+                    <input class="entry" type="text" ng-model="mmpsu.phase_count" /> <button ng-click="setPhaseCount()">SET Phase Count</button>
+                </div>
             </div>
         </span>
 
