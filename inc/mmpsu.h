@@ -73,6 +73,7 @@ enum MMPSUMemMap {
   VOLTAGE_KI,
   CURRENT_KP,
   CURRENT_KI,
+  I2C_ERROR_COUNT,
   NUM_FIELDS
 };
 
@@ -122,3 +123,5 @@ int mmpsu_get_state(int fd, MMPSUError& error);
 std::string mmpsu_get_state_str(int fd, MMPSUError& error);
 
 std::string decode_state(int state);
+
+int mmpsu_get_i2c_error_count(int fd, MMPSUError& error);

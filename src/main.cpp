@@ -41,7 +41,8 @@ json mmpsu_state = {
     {"voltage_kp", 1},
     {"voltage_ki", 1},
     {"current_kp", 1},
-    {"current_ki", 1}
+    {"current_ki", 1},
+    {"i2c_error_count", 0}
 };
 
 /* map of fields to setter functions */
@@ -53,6 +54,17 @@ std::map<std::string, std::any> mmpsu_setters {
     {"voltage_ki", std::any_cast<mmpsu_set_field_int>(mmpsu_set_voltage_ki)},
     {"current_kp", std::any_cast<mmpsu_set_field_int>(mmpsu_set_current_kp)},
     {"current_ki", std::any_cast<mmpsu_set_field_int>(mmpsu_set_current_ki)},
+};
+
+/* map of fields to setter function types */
+std::map<std::string, std::size_t> mmpsu_setter_types {
+    {"enabled", typeid(bool).hash_code()},
+    {"vout_setpt", typeid(float).hash_code()},
+    {"devel_mode", typeid(bool).hash_code()},
+    {"voltage_kp", typeid(int).hash_code()},
+    {"voltage_ki", typeid(int).hash_code()},
+    {"current_kp", typeid(int).hash_code()},
+    {"current_ki", typeid(int).hash_code()},
 };
 
 std::map<int, std::string> phase_names { {0,"a"}, {1,"b"}, {2,"c"}, {3,"d"}, {4,"e"}, {5,"f"}, };
@@ -128,51 +140,56 @@ void listener(){
         std::getline(data_in_stream, input);
         try{
             auto obj = json::parse(input.c_str());
-           
+
             // for each item in the incoming object
             for(auto& item : obj.items()){
                 std::string key = item.key();
-                auto value = item.value();
 
                 if(mmpsu_state.contains(key)){
-                    const std::type_info& info = typeid(value);
-                    const std::type_info& ref_info = typeid(mmpsu_state[key]);
-                    if(info.hash_code() == ref_info.hash_code()){
-                        // types match
-                        if(value != mmpsu_state[key]){
-                            // value is changing
-
-                            if(mmpsu_setters.find(key) != mmpsu_setters.end()){
-                                // we have a setter for it
+                
+                    if(mmpsu_setters.find(key) != mmpsu_setters.end()){
+                        // we have a setter for it
+                        /* call the associated function */
+                        try{
+                            /* check each possible type, cast as necessary */
+                            if(mmpsu_setter_types[key] == typeid(bool).hash_code()){
+                                bool value = obj[key].get<bool>();
+                                std::cout << "Setting " << key << " to " << value << std::endl;
                                 i2c_mutex.lock();
-
-                                /* call the associated function */
-                                try{
-                                    /* check each possible type, cast as necessary */
-                                    if(info.hash_code() == typeid(bool).hash_code()){
-                                        std::any_cast<mmpsu_set_field_bool>(mmpsu_setters[key])(i2c_fd, value, comm_err);
-                                    }else if(info.hash_code() == typeid(int).hash_code()){
-                                        std::any_cast<mmpsu_set_field_int>(mmpsu_setters[key])(i2c_fd, value, comm_err);
-                                    }else if(info.hash_code() == typeid(float).hash_code()){
-                                        std::any_cast<mmpsu_set_field_float>(mmpsu_setters[key])(i2c_fd, value, comm_err);
-                                    }else{
-                                        std::cout << "Cool type bro (" << info.name() << "), send it again..." << std::endl;
-                                    }
-                                }catch(const std::bad_any_cast& err) {
-                                    std::cout << "Bad cast occurred: " << err.what() << std::endl;
-                                }
+                                std::any_cast<mmpsu_set_field_bool>(mmpsu_setters[key])(i2c_fd, value, comm_err);
                                 i2c_mutex.unlock();
+                                mmpsu_state_mtx.lock();
+                                mmpsu_state[key] = value; // stash the value in the state object
+                                mmpsu_state_mtx.unlock();
+                            }else if(mmpsu_setter_types[key] == typeid(int).hash_code()){
+                                int value = obj[key].get<int>();
+                                std::cout << "Setting " << key << " to " << value << std::endl;
+                                i2c_mutex.lock();
+                                std::any_cast<mmpsu_set_field_int>(mmpsu_setters[key])(i2c_fd, value, comm_err);
+                                i2c_mutex.unlock();
+                                mmpsu_state_mtx.lock();
+                                mmpsu_state[key] = value; // stash the value in the state object
+                                mmpsu_state_mtx.unlock();
+                            }else if(mmpsu_setter_types[key] == typeid(float).hash_code()){
+                                float value = obj[key].get<float>();
+                                std::cout << "Setting " << key << " to " << value << std::endl;
+                                i2c_mutex.lock();
+                                std::any_cast<mmpsu_set_field_float>(mmpsu_setters[key])(i2c_fd, value, comm_err);
+                                i2c_mutex.unlock();
+                                mmpsu_state_mtx.lock();
+                                mmpsu_state[key] = value; // stash the value in the state object
+                                mmpsu_state_mtx.unlock();
                             }else{
-                                std::cout << "We don't have a setter function for " << key << std::endl;
+                                std::cout << "Type is not int, bool, or float ..." << std::endl;
                             }
-                            
-                            mmpsu_state_mtx.lock();
-                            mmpsu_state[key] = value; // stash the value in the state object
-                            mmpsu_state_mtx.unlock();
+                        }catch(const std::bad_any_cast& err) {
+                            std::cout << "Bad cast occurred: " << err.what() << std::endl;
                         }
                     }else{
-                        std::cout << "mmpsu_state[" << key << "] isn't of type " << info.name() << "; it is of type " << ref_info.name() << std::endl;
+                        std::cout << "We don't have a setter function for " << key << std::endl;
                     }
+                    
+                    
                 }else{
                     std::cout << "mmpsu_state doesn't contain " << key << std::endl;
                 }
@@ -238,6 +255,7 @@ int main(int argc, char *argv[]){
             int phases_overtemp = mmpsu_get_phases_in_overtemp(i2c_fd, comm_err);
             mmpsu_state["state"] = mmpsu_get_state(i2c_fd, comm_err);
             mmpsu_state["state_str"] = decode_state(mmpsu_state["state"]);
+            mmpsu_state["i2c_error_count"] = mmpsu_get_i2c_error_count(i2c_fd, comm_err);
 
             mmpsu_state["connected"] = comm_err == MMPSUError::NONE;
 

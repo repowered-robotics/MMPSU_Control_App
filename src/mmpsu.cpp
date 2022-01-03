@@ -70,7 +70,12 @@ bool mmpsu_test_connection(int fd, MMPSUError& error){
 }
 
 /**
+ * @brief read a field from mmpsu over I2C
+ * @param fd i2c sysfs file descriptor
+ * @param field field number to read
  * @param timeout read and write timeout in microseconds
+ * @param error reference to an instance of MMPSUError
+ * @return the value of the field read
  */
 int mmpsu_read_field(int fd, int field, int timeout, MMPSUError& error){
     struct timeval tv;
@@ -132,6 +137,15 @@ int mmpsu_read_field(int fd, int field, int timeout, MMPSUError& error){
     return retval;
 }
 
+/**
+ * @brief write a value to a specified field over I2C
+ * 
+ * @param fd i2c sysfs file descriptor
+ * @param field field number to write
+ * @param value integer value to write to field
+ * @param timeout read and write timeout in microseconds
+ * @param error reference to an instance of MMPSUError
+ */
 void mmpsu_write_field(int fd, int field, int value, int timeout, MMPSUError& error){
     struct timeval tv;
     tv.tv_sec = 0;
@@ -343,4 +357,9 @@ std::string decode_state(int state){
         default:
             return "UNKNOWN";
     }
+}
+
+
+int mmpsu_get_i2c_error_count(int fd, MMPSUError& error){
+    return mmpsu_read_field(fd, I2C_ERROR_COUNT, 50000, error);
 }

@@ -16,24 +16,26 @@ app.controller('mmpsuAppCtl', function($scope) {
         connected_str: "NOT CONNECTED",
         connected_style: {color: 'red'},
         devel_mode: false,
-        system_state: 0,
+        state: 0,
         state_str: "OUTPUT_OFF",
         voltage_kp: 1,
         voltage_ki: 32,
         current_kp: 8,
-        current_ki: 13
+        current_ki: 13,
+        i2c_error_count: 0
     };
 
     $scope.socket.on('update', function(data){
         $scope.$apply(function(){
-            if(data.connected){
+            $scope.mmpsu.connected = data.connected;
+            if($scope.mmpsu.connected){
                 // 
-                $scope.mmpsu.connected = true;
                 $scope.mmpsu.connected_str = "CONNECTED";
                 $scope.mmpsu.connected_style = {color:'green'};
                 $scope.mmpsu.enabled = data.enabled;
                 $scope.mmpsu.state = data.state;
                 $scope.mmpsu.state_str = data.state_str;
+                $scope.mmpsu.i2c_error_count = data.i2c_error_count;
                 if($scope.mmpsu.enabled){
                     $scope.mmpsu.enabled_str = "ENABLED";
                     $scope.mmpsu.enabled_style = {color:'green'};
@@ -43,18 +45,31 @@ app.controller('mmpsuAppCtl', function($scope) {
                 }
                 $scope.mmpsu.vout = data.vout;
                 $scope.mmpsu.vout_str = $scope.mmpsu.vout.toFixed(3) + " V";
-                for(var ch in data.phases){
+                for(const ch in data.phases){
+                    $scope.mmpsu.phases[ch] = {};
                     $scope.mmpsu.phases[ch].present = data.phases[ch].present;
                     if($scope.mmpsu.phases[ch].present){
                         // things to do when present
                         $scope.mmpsu.phases[ch].present_str = "YES";
-                        $scope.mmpsu.phases[ch].enabled_str = (data.phases[ch].enabled ? "YES": "NO");
-                        $scope.mmpsu.phases[ch].duty_cycle_str = data.phases[ch].duty_cycle.toFixed(2);
-                        $scope.mmpsu.phases[ch].current_str = data.phases[ch].current.toFixed(2) + " A";
+                        if(data.phases[ch].enabled){
+                            $scope.mmpsu.phases[ch].enabled_str = "YES";
+                            $scope.mmpsu.phases[ch].enabled_style = {'background-color':"green"};
+                            $scope.mmpsu.phases[ch].phase_style = {color: "white"};
+                            $scope.mmpsu.phases[ch].duty_cycle_str = data.phases[ch].duty_cycle.toFixed(2);
+                            $scope.mmpsu.phases[ch].current_str = data.phases[ch].current.toFixed(2) + " A";
+                        }else{
+                            $scope.mmpsu.phases[ch].enabled_str = "NO";
+                            $scope.mmpsu.phases[ch].enabled_style = {'background-color':"gray"};
+                            $scope.mmpsu.phases[ch].phase_style = {"color":"LightGray"};
+                            $scope.mmpsu.phases[ch].duty_cycle_str = "---";
+                            $scope.mmpsu.phases[ch].current_str = "---";
+                        }
                         $scope.mmpsu.phases[ch].overtemp = data.phases[ch].overtemp;
                         $scope.mmpsu.phases[ch].overtemp_style = (data.phases[ch].overtemp ? {'background-color':"red"} : {'background-color':"gray"});
                     }else{
                         // things to do when not present
+                        $scope.mmpsu.phases[ch].phase_style = {"color":"Gray"};
+                        $scope.mmpsu.phases[ch].enabled_style = {'background-color':"gray"};
                         $scope.mmpsu.phases[ch].present_str = "NO";
                         $scope.mmpsu.phases[ch].enabled_str = "---";
                         $scope.mmpsu.phases[ch].duty_cycle_str = "---";
@@ -63,7 +78,6 @@ app.controller('mmpsuAppCtl', function($scope) {
                     }
                 }
             }else{
-                $scope.mmpsu.connected = false;
                 $scope.mmpsu.connected_str = "NOT CONNECTED";
                 $scope.mmpsu.connected_style = {color:'red'};
                 $scope.mmpsu.enabled_str = "---";

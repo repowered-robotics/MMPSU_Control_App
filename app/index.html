@@ -68,7 +68,8 @@
             <div class="entry-container">
                 <input type="checkbox" ng-model="mmpsu.devel_mode" ng-change="setDeveloperMode()" />Developer Mode
                 <div ng-show="mmpsu.devel_mode">
-                    <p><span>STATE: </span> <span ng-model="mmpsu.state_str"></span> </p>
+                    <p>STATE: {{mmpsu.state_str}}</p>
+                    <p>I2C Errors: {{mmpsu.i2c_error_count}} </p>
                     <input class="entry" type="text" ng-model="mmpsu.voltage_kp" /> <button ng-click="setVoltageKp()">SET V Kp</button>
                     <input class="entry" type="text" ng-model="mmpsu.voltage_ki" /> <button ng-click="setVoltageKi()">SET V Ki</button>
                     <input class="entry" type="text" ng-model="mmpsu.current_kp" /> <button ng-click="setCurrentKp()">SET I Kp</button>
@@ -78,14 +79,15 @@
         </span>
 
         <div class="phases-container">
-            <span class="phase-data-container" id="phase-a">
+            <span class="phase-data-container" id="phase-a" ng-style="mmpsu.phases.a.phase_style">
                 <span class="phase-name">Phase A</span>
                 <hr>
                 <span class="phase-label">Present:</span>
                 <span class="phase-data" id="phase-a-present">{{mmpsu.phases.a.present_str}}</span>
                 <br />
                 <span class="phase-label">Enabled:</span>
-                <span class="phase-data" id="phase-a-enabled">{{mmpsu.phases.a.enabled_str}}</span>
+                <span class="enabled-indicator" ng-style="mmpsu.phases.a.enabled_style"></span>
+                <!-- <span class="phase-data" id="phase-a-enabled">{{mmpsu.phases.a.enabled_str}}</span> -->
                 <br />
                 <span class="phase-label">Duty Cycle:</span>
                 <span class="phase-data" id="phase-a-duty-cycle">{{mmpsu.phases.a.duty_cycle_str}} &percnt;</span>
@@ -104,14 +106,15 @@
                 <button class="phase-btn" id="phase-a-set-limit-btn" >SET</button>
             </span>
 
-            <span class="phase-data-container" id="phase-b">
+            <span class="phase-data-container" id="phase-b" ng-style="mmpsu.phases.b.phase_style">
                 <span class="phase-name">Phase B</span>
                 <hr>
                 <span class="phase-label">Present:</span>
                 <span class="phase-data" id="phase-b-present">{{mmpsu.phases.b.present_str}}</span>
                 <br />
                 <span class="phase-label">Enabled:</span>
-                <span class="phase-data" id="phase-b-enabled">{{mmpsu.phases.b.enabled_str}}</span>
+                <span class="enabled-indicator" ng-style="mmpsu.phases.b.enabled_style"></span>
+                <!-- <span class="phase-data" id="phase-b-enabled">{{mmpsu.phases.b.enabled_str}}</span> -->
                 <br />
                 <span class="phase-label">Duty Cycle:</span>
                 <span class="phase-data" id="phase-b-duty-cycle">{{mmpsu.phases.b.duty_cycle_str}} &percnt;</span>
@@ -130,14 +133,15 @@
                 <button class="phase-btn" id="phase-b-set-limit-btn" onclick="setCurrentLimit(1)">SET</button>
             </span>
             
-            <span class="phase-data-container" id="phase-c">
+            <span class="phase-data-container" id="phase-c" ng-style="mmpsu.phases.c.phase_style">
                 <span class="phase-name">Phase C</span>
                 <hr>
                 <span class="phase-label">Present:</span>
                 <span class="phase-data" id="phase-c-present">{{mmpsu.phases.c.present_str}}</span>
                 <br />
                 <span class="phase-label">Enabled:</span>
-                <span class="phase-data" id="phase-c-enabled">{{mmpsu.phases.c.enabled_str}}</span>
+                <span class="enabled-indicator" ng-style="mmpsu.phases.c.enabled_style"></span>
+                <!-- <span class="phase-data" id="phase-c-enabled">{{mmpsu.phases.c.enabled_str}}</span> -->
                 <br />
                 <span class="phase-label">Duty Cycle:</span>
                 <span class="phase-data" id="phase-c-duty-cycle">{{mmpsu.phases.c.duty_cycle_str}} &percnt;</span>
@@ -156,14 +160,15 @@
                 <button class="phase-btn" id="phase-c-set-limit-btn" onclick="setCurrentLimit(2)">SET</button>
             </span>
 
-            <span class="phase-data-container" id="phase-d">
+            <span class="phase-data-container" id="phase-d" ng-style="mmpsu.phases.d.phase_style">
                 <span class="phase-name">Phase D</span>
                 <hr>
                 <span class="phase-label">Present:</span>
                 <span class="phase-data" id="phase-d-present">{{mmpsu.phases.d.present_str}}</span>
                 <br />
                 <span class="phase-label">Enabled:</span>
-                <span class="phase-data" id="phase-d-enabled">{{mmpsu.phases.d.enabled_str}}</span>
+                <span class="enabled-indicator" ng-style="mmpsu.phases.d.enabled_style"></span>
+                <!-- <span class="phase-data" id="phase-d-enabled">{{mmpsu.phases.d.enabled_str}}</span> -->
                 <br />
                 <span class="phase-label">Duty Cycle:</span>
                 <span class="phase-data" id="phase-d-duty-cycle">{{mmpsu.phases.d.duty_cycle_str}} &percnt;</span>
@@ -182,14 +187,15 @@
                 <button class="phase-btn" id="phase-d-set-limit-btn" onclick="setCurrentLimit(3)">SET</button>
             </span>
             
-            <span class="phase-data-container" id="phase-e">
+            <span class="phase-data-container" id="phase-e" ng-style="mmpsu.phases.e.phase_style">
                 <span class="phase-name">Phase E</span>
                 <hr>
                 <span class="phase-label">Present:</span>
                 <span class="phase-data" id="phase-e-present">{{mmpsu.phases.e.present_str}}</span>
                 <br />
                 <span class="phase-label">Enabled:</span>
-                <span class="phase-data" id="phase-e-enabled">{{mmpsu.phases.e.enabled_str}}</span>
+                <span class="enabled-indicator" ng-style="mmpsu.phases.e.enabled_style"></span>
+                <!-- <span class="phase-data" id="phase-e-enabled">{{mmpsu.phases.e.enabled_str}}</span> -->
                 <br />
                 <span class="phase-label">Duty Cycle:</span>
                 <span class="phase-data" id="phase-e-duty-cycle">{{mmpsu.phases.e.duty_cycle_str}} &percnt;</span>
@@ -208,14 +214,15 @@
                 <button class="phase-btn" id="phase-e-set-limit-btn" onclick="setCurrentLimit(4)">SET</button>
             </span>
 
-            <span class="phase-data-container" id="phase-f">
+            <span class="phase-data-container" id="phase-f" ng-style="mmpsu.phases.f.phase_style">
                 <span class="phase-name">Phase F</span>
                 <hr>
                 <span class="phase-label">Present:</span>
                 <span class="phase-data" id="phase-f-present">{{mmpsu.phases.f.present_str}}</span>
                 <br />
                 <span class="phase-label">Enabled:</span>
-                <span class="phase-data" id="phase-f-enabled">{{mmpsu.phases.f.enabled_str}}</span>
+                <span class="enabled-indicator" ng-style="mmpsu.phases.f.enabled_style"></span>
+                <!-- <span class="phase-data" id="phase-f-enabled">{{mmpsu.phases.f.enabled_str}}</span> -->
                 <br />
                 <span class="phase-label">Duty Cycle:</span>
                 <span class="phase-data" id="phase-f-duty-cycle">{{mmpsu.phases.f.duty_cycle_str}} &percnt;</span>

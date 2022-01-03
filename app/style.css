@@ -164,3 +164,11 @@ input.entry {
     width: 1em;
     border-radius: 50%;
 }
+
+.enabled-indicator {
+    display: inline-block;
+    background-color: gray;
+    height: 1em;
+    width: 1em;
+    border-radius: 50%;
+}
