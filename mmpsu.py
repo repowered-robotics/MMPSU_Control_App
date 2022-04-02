@@ -2,6 +2,7 @@ from typing import Any
 import smbus
 import struct
 import queue
+import subprocess
 
 # BEGIN CONSTANTS
 OUTPUT_ENABLED = 0
@@ -28,9 +29,14 @@ PHASE_F_DUTY_CYCLE = 20
 PHASE_F_CURRENT = 21
 PHASE_F_CURRENT_LIMIT = 22
 PHASES_IN_OVERTEMP = 23
-NUM_FIELDS = 24
+DEBUG_MODE = 24
+NUM_FIELDS = 25
 
 MMPSU_ADDR = 0x5A
+
+DEBUG_MODE_OFF = 0
+DEBUG_MODE_RAW = 1
+DEBUG_MODE_PRETTY = 2
 
 MMPSU_CMD_NONE = 0x00
 MMPSU_CMD_READ = 0x01
@@ -56,47 +62,77 @@ class MMPSU:
         self._bus = smbus.SMBus(1)
         self._connected = False
         self._addr = MMPSU_ADDR
-        self.errors = queue.Queue()
+        self.errors = queue.Queue(maxsize=128)
         self._phases = []
         for i in range(0, MAX_PHASES):
             data = PhaseData()
             data.current_limit = 30.0
             self._phases.append(data)
-    
-    def _write_field(self, field: int, value: bytearray) -> None:
+    def _put_error(self, msg):
         try:
-            cmd = (field << 2) | MMPSU_CMD_WRITE
-            self._bus.write_i2c_block_data(self._addr, cmd, value)
-            self._connected = True
-        except IOError:
-            self.errors.put("I2C Write Error")
-            self._connected = False
-    
-    def _read_field(self, field: int) -> bytearray:
-        cmd = (field << 2) | MMPSU_CMD_READ
-        retval = bytearray()
-        try:
-            data = self._bus.read_i2c_block_data(self._addr, cmd, 4)
-            for val in data:
-                retval.append(val)
-            self._connected = True
-        except IOError:
-            # print("I2C Read Error")
-            self._connected = False
+            self.errors.put(msg)
+        except queue.Full:
+            pass
 
-        return retval
+    # def _write_field(self, field: int, value: list) -> None:
+    #     try:
+    #         cmd = (field << 2) | MMPSU_CMD_WRITE
+    #         # vals = []
+    #         # for i in range(0,4):
+    #         #     vals[i] = (value >> (i*8)) & 0xFF
+    #         print(value)
+    #         self._bus.write_byte(self._addr, cmd)
+    #         self._bus.write_i2c_block_data(self._addr, 0, value)
+    #         self._connected = True
+    #     except IOError:
+    #         self._put_error("I2C Write Error")
+    #         self._connected = False
+    
+    # def _read_field(self, field: int) -> bytearray:
+    #     cmd = (field << 2) | MMPSU_CMD_READ
+    #     retval = bytearray()
+    #     try:
+    #         self._bus.write_byte(self._addr, cmd)
+    #         data = self._bus.read_i2c_block_data(self._addr, 0, 4)
+    #         print(data)
+    #         for val in data:
+    #             retval.append(val)
+    #         self._connected = True
+    #     except IOError:
+    #         self._put_error("I2C Read Error")
+    #         self._connected = False
+
+    #     return retval
     
     def _write_int(self, field: int, data: int) -> None:
-        arr = bytearray(4)
-        struct.pack_into('<i', arr, 0, data)
-        self._write_field(field, list(arr))
+        parts = []
+        parts.append("./bin/mmpsu_comm")
+        parts.append("/dev/i2c-1")
+        parts.append("{:d}".format(MMPSU_CMD_WRITE))
+        parts.append("{:d}".format(field))
+        parts.append("{:d}".format(data))
+        subprocess.run(parts)
+        self._connected = True
     
     def _read_int(self, field: int) -> int:
-        data = self._read_field(field)
-        if len(data) < 4:
+        parts = []
+        parts.append("./bin/mmpsu_comm")
+        parts.append("/dev/i2c-1")
+        parts.append("{:d}".format(MMPSU_CMD_READ))
+        parts.append("{:d}".format(field))
+        proc = subprocess.run(parts, capture_output=True)
+        data = proc.stdout
+        # print(data)
+        if len(data) < 1:
+            self._connected = False
             return 0
         else:
-            return struct.unpack('<i', data)[0]
+            self._connected = True
+            try:
+                return int(data)
+            except ValueError:
+                self._connected = False
+                return 0
 
     def update_all(self) -> None:
         cmd = MMPSU_CMD_READ_ALL
@@ -124,6 +160,7 @@ class MMPSU:
 
     def get_output_enabled(self) -> bool:
         enabled = self._read_int(OUTPUT_ENABLED)
+        print(enabled)
         if enabled <= 0:
             return False
         else:
@@ -242,6 +279,12 @@ class MMPSU:
         for i in currents:
             retval += i
         return retval
+    
+    def enable_pretty_debug(self):
+        self._write_int(DEBUG_MODE, DEBUG_MODE_PRETTY)
+    
+    def enable_raw_debug(self):
+        self._write_int(DEBUG_MODE, DEBUG_MODE_RAW)
 
     # ==== BEGIN PROPERTY GUBBINS ====
     connected = property(lambda self: self._connected, None, None, "Get the status of whether or not MMPSU is found on I2C bus")

@@ -57,6 +57,10 @@ body {
     text-align: left;
 }
 
+.entry {
+    height: 0.9em;
+}
+
 input.entry {
     display: inline-block;
     width: 90%;
@@ -129,13 +133,19 @@ input.entry {
     margin: 5px auto;
 }
 
+.debug-window-container {
+    display: inline-block;
+    width: 40%;
+    margin: 0 auto;
+}
+
 .debug-window {
     display: inline-block;
     background-color: gray;
     color: black;
     font-size: 12pt;
-    height: 25em;
-    width: 40em;
+    height: 10em;
+    width: 95%;
     margin: 0 auto;
     overflow-x: hidden;
     overflow-y: scroll;
@@ -148,6 +158,14 @@ input.entry {
 }
 
 .overtemp-indicator {
+    display: inline-block;
+    background-color: gray;
+    height: 1em;
+    width: 1em;
+    border-radius: 50%;
+}
+
+.enabled-indicator {
     display: inline-block;
     background-color: gray;
     height: 1em;

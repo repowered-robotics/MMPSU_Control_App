@@ -1,6 +1,4 @@
-<script type="text/javascript">
-    {% include 'control_scripts.js' ignore missing %}
-</script>
+{% include 'scripts.html' ignore missing %}
 
 <div class="center-block">
     <span class="label-container">
@@ -34,7 +32,8 @@
     <span class="btn-container">
         <span class="label"> </span> 
         <br />
-        <button id="toggle-enable-btn" type="submit" onclick="toggle_enable_mmspu()">ENABLE</button>
+        <button id="enable-btn" type="submit" onclick="enable_mmspu()">ENABLE</button>
+        <button id="disable-btn" type="submit" onclick="disable_mmspu()">DISABLE</button>
         <br />
         <span class="label"> </span> 
         <br />
@@ -47,10 +46,12 @@
     
 </div>
 
-<div class="debug-window" id="debugger-window">
+<span class="debug-window-container">
+    <h2>UART Debug Output</h3>
+    <div class="debug-window" id="debugger-window">
 
-</div>
-
+    </div>
+</span>
 
 <div class="phases-container">
     <span class="phase-data-container" id="phase-a">
