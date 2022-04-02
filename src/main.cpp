@@ -44,7 +44,8 @@ json mmpsu_state = {
     {"current_ki", 1},
     {"i2c_error_count", 0},
     {"manual_mode", false},
-    {"phase_count", 0}
+    {"phase_count", 0},
+    {"balance_phase_current", false}
 };
 
 /* map of fields to setter functions */
@@ -57,7 +58,8 @@ std::map<std::string, std::any> mmpsu_setters {
     {"current_kp", std::any_cast<mmpsu_set_field_int>(mmpsu_set_current_kp)},
     {"current_ki", std::any_cast<mmpsu_set_field_int>(mmpsu_set_current_ki)},
     {"manual_mode", std::any_cast<mmpsu_set_field_bool>(mmpsu_set_manual_mode)},
-    {"phase_count", std::any_cast<mmpsu_set_field_int>(mmpsu_set_phase_count)}
+    {"phase_count", std::any_cast<mmpsu_set_field_int>(mmpsu_set_phase_count)},
+    {"balance_phase_current", std::any_cast<mmpsu_set_field_bool>(mmpsu_set_balance_phase_current)}
 };
 
 /* map of fields to setter function types */
@@ -70,7 +72,8 @@ std::map<std::string, std::size_t> mmpsu_setter_types {
     {"current_kp", typeid(int).hash_code()},
     {"current_ki", typeid(int).hash_code()},
     {"manual_mode", typeid(bool).hash_code()},
-    {"phase_count", typeid(int).hash_code()}
+    {"phase_count", typeid(int).hash_code()},
+    {"balance_phase_current", typeid(bool).hash_code()}
 };
 
 std::map<int, std::string> phase_names { {0,"a"}, {1,"b"}, {2,"c"}, {3,"d"}, {4,"e"}, {5,"f"}, };
@@ -247,6 +250,7 @@ int main(int argc, char *argv[]){
             // MMPSU is not connected or some error occurred
             bool success = reconnect_i2c(i2c_path, i2c_fd, mmpsu_addr, comm_err);
             if(success){
+                // mmpsu_state["connected"] = true;
                 mmpsu_state["connected"] = mmpsu_test_connection(i2c_fd, comm_err);
             }else{
                 std::this_thread::sleep_for(std::chrono::milliseconds(500));

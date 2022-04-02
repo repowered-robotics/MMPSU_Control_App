@@ -9,6 +9,7 @@ app.controller('mmpsuAppCtl', function($scope) {
         vout_setpt: 12.0,
         iout_limit: 150.0,
         vout_str: "0.0 V",
+        iout: 0.0,
         iout_str: "0.0 A",
         phases: {},
         enabled_str: "---",
@@ -24,7 +25,8 @@ app.controller('mmpsuAppCtl', function($scope) {
         current_ki: 13,
         i2c_error_count: 0,
         manual_mode: false,
-        phase_count: 0
+        phase_count: 0,
+        balance_phase_current: false
     };
 
     $scope.socket.on('update', function(data){
@@ -47,6 +49,7 @@ app.controller('mmpsuAppCtl', function($scope) {
                 }
                 $scope.mmpsu.vout = data.vout;
                 $scope.mmpsu.vout_str = $scope.mmpsu.vout.toFixed(3) + " V";
+                var raw_iout = 0.0;
                 for(const ch in data.phases){
                     $scope.mmpsu.phases[ch] = {};
                     $scope.mmpsu.phases[ch].present = data.phases[ch].present;
@@ -58,6 +61,7 @@ app.controller('mmpsuAppCtl', function($scope) {
                             $scope.mmpsu.phases[ch].enabled_style = {'background-color':"green"};
                             $scope.mmpsu.phases[ch].phase_style = {color: "white"};
                             $scope.mmpsu.phases[ch].duty_cycle_str = data.phases[ch].duty_cycle.toFixed(2);
+                            raw_iout += data.phases[ch].current;
                             $scope.mmpsu.phases[ch].current_str = data.phases[ch].current.toFixed(2) + " A";
                         }else{
                             $scope.mmpsu.phases[ch].enabled_str = "NO";
@@ -66,6 +70,8 @@ app.controller('mmpsuAppCtl', function($scope) {
                             $scope.mmpsu.phases[ch].duty_cycle_str = "---";
                             $scope.mmpsu.phases[ch].current_str = "---";
                         }
+                        $scope.mmpsu.iout = ($scope.mmpsu.iout + raw_iout)/2.0;
+                        $scope.mmpsu.iout_str = $scope.mmpsu.iout.toFixed(2) + " A";
                         $scope.mmpsu.phases[ch].overtemp = data.phases[ch].overtemp;
                         $scope.mmpsu.phases[ch].overtemp_style = (data.phases[ch].overtemp ? {'background-color':"red"} : {'background-color':"gray"});
                     }else{
@@ -139,12 +145,17 @@ app.controller('mmpsuAppCtl', function($scope) {
     $scope.setManualMode = function() {
         config = {manual_mode: $scope.mmpsu.manual_mode};
         $scope.socket.emit('configure', config);
-    }
+    };
 
     $scope.setPhaseCount = function() {
         config = {phase_count: $scope.mmpsu.phase_count};
         $scope.socket.emit('configure', config);
-    }
+    };
+
+    $scope.setEnablePhaseCurrentBalance = function() {
+        config = {balance_phase_current: $scope.mmpsu.balance_phase_current};
+        $scope.socket.emit('configure', config);
+    };
 
 });
 

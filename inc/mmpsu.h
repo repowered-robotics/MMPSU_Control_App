@@ -76,6 +76,7 @@ enum MMPSUMemMap {
   I2C_ERROR_COUNT,
   MANUAL_MODE,
   PHASE_COUNT_REQUESTED,
+  BALANCE_PHASE_CURRENT,
   NUM_FIELDS
 };
 
@@ -131,3 +132,5 @@ int mmpsu_get_i2c_error_count(int fd, MMPSUError& error);
 void mmpsu_set_manual_mode(int fd, bool manual_mode, MMPSUError& error);
 
 void mmpsu_set_phase_count(int fd, int phase_count, MMPSUError& error);
+
+void mmpsu_set_balance_phase_current(int fd, bool balance, MMPSUError& error);

@@ -373,3 +373,8 @@ void mmpsu_set_manual_mode(int fd, bool manual_mode, MMPSUError& error){
 void mmpsu_set_phase_count(int fd, int phase_count, MMPSUError& error){
     mmpsu_write_field(fd, PHASE_COUNT_REQUESTED, phase_count, 50000, error);
 }
+
+void mmpsu_set_balance_phase_current(int fd, bool balance, MMPSUError& error){
+    int value = (balance ? 1 : 0);
+    mmpsu_write_field(fd, BALANCE_PHASE_CURRENT, value, 50000, error);
+}

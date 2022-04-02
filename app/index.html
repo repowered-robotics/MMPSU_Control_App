@@ -66,6 +66,7 @@
             </div>
 
             <div class="entry-container">
+                <input type="checkbox" ng-model="mmpsu.balance_phase_current" ng-change="setEnablePhaseCurrentBalance()" />Phase Current Balancing <br />
                 <input type="checkbox" ng-model="mmpsu.devel_mode" ng-change="setDeveloperMode()" />Developer Mode
                 <div ng-show="mmpsu.devel_mode">
                     <p>STATE: {{mmpsu.state_str}}</p>
